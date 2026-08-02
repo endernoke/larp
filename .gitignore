@@ -1,0 +1,7 @@
+specs/
+
+node_modules/
+dist/
+.vite/
+*.local
+.DS_Store
