@@ -38,15 +38,18 @@ export class BootScene extends Phaser.Scene {
       this.progressFill.width = Math.max(5, 220 * progress);
     });
 
-    // TODO(frontend-assets): Load tilemaps, sprites, and audio here. The
-    // progress listener above will automatically represent actual asset load.
     track.setDepth(1);
     this.progressFill.setDepth(2);
+
+    this.load.image('campus-tiles', 'assets/tiles/campus-tiles.png');
+    this.load.tilemapTiledJSON('campus-map', 'assets/maps/campus-map.tmj');
+    this.load.spritesheet('player', 'assets/sprites/player.png', {
+      frameWidth: 16,
+      frameHeight: 24,
+    });
   }
 
   create(): void {
-    // With no external assets the boot scene completes immediately. Once real
-    // assets are queued in preload(), Phaser will hold here until they finish.
     this.progressFill.width = 220;
     this.scene.start('world');
   }
