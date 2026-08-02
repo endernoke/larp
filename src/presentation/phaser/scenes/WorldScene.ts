@@ -63,8 +63,34 @@ export class WorldScene extends Phaser.Scene {
     this.player.setOrigin(0.5, 1);
     this.player.body?.setSize(10, 6).setOffset(3, 17);
 
+    this.anims.create({
+      key: 'player-walk-down',
+      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 2 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'player-walk-left',
+      frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'player-walk-right',
+      frames: this.anims.generateFrameNumbers('player', { start: 6, end: 8 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'player-walk-up',
+      frames: this.anims.generateFrameNumbers('player', { start: 9, end: 11 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+
     map.setCollisionByProperty({ collides: true }, true, true, structuresLayer as Phaser.Tilemaps.TilemapLayer);
     this.physics.add.collider(this.player, structuresLayer as Phaser.Tilemaps.TilemapLayer);
+    this.player.setCollideWorldBounds(true);
 
     const interactionsLayer = map.getObjectLayer('Interactions');
     if (!interactionsLayer) {
@@ -113,7 +139,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(): void {
-    const speed = 190;
+    const speed = 50;
     let horizontal = 0;
     let vertical = 0;
 
@@ -126,6 +152,30 @@ export class WorldScene extends Phaser.Scene {
 
     const direction = new Phaser.Math.Vector2(horizontal, vertical).normalize().scale(speed);
     this.player.setVelocity(direction.x, direction.y);
+
+    if (horizontal < 0) this.player.anims.play('player-walk-left', true);
+    else if (horizontal > 0) this.player.anims.play('player-walk-right', true);
+    else if (vertical < 0) this.player.anims.play('player-walk-up', true);
+    else if (vertical > 0) this.player.anims.play('player-walk-down', true);
+    else {
+      this.player.anims.stop();
+      const lastDirection = this.player.anims.currentAnim?.key.split('-')[2];
+      switch (lastDirection) {
+        case 'left':
+          this.player.setFrame(3);
+          break;
+        case 'right':
+          this.player.setFrame(7);
+          break;
+        case 'up':
+          this.player.setFrame(10);
+          break;
+        case 'down':
+        default:
+          this.player.setFrame(1);
+          break;
+      }
+    }
 
     this.player.setDepth(this.player.y);
 
