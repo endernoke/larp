@@ -8,7 +8,9 @@
   }
 
   let { panel, onClose }: Props = $props();
-  let chosenTasks = $state(new Set(mockWeekPlan.filter((task) => task.selected).map((task) => task.label)));
+  let chosenTasks = $state(
+    new Set(mockWeekPlan.filter((task) => task.selected).map((task) => task.label)),
+  );
 
   const panelTitles: Record<PanelId, { eyebrow: string; title: string }> = {
     phone: { eyebrow: 'SIGNAL TERMINAL', title: 'Your extremely reliable feed' },
@@ -30,11 +32,13 @@
       <p class="eyebrow">{panelTitles[panel].eyebrow}</p>
       <h2>{panelTitles[panel].title}</h2>
     </div>
-    <button class="close-button" onclick={onClose} aria-label="Close panel">×</button>
+    <button type="button" class="close-button" onclick={onClose} aria-label="Close panel">×</button>
   </div>
 
   {#if panel === 'phone'}
-    <div class="source-tabs"><span class="selected">All signals</span><span>Messages</span><span>Jobs</span></div>
+    <div class="source-tabs">
+      <span class="selected">All signals</span><span>Messages</span><span>Jobs</span>
+    </div>
     <div class="feed-list">
       {#each mockFeed as item}
         <article class="feed-card {item.tone}">
@@ -47,30 +51,54 @@
     </div>
   {:else if panel === 'planner'}
     <div class="capacity">
-      <div><span>ALLOCATED</span><strong>{[...chosenTasks].reduce((sum, label) => sum + (mockWeekPlan.find((item) => item.label === label)?.cost ?? 0), 0)} / 7</strong></div>
-      <div class="capacity-track"><i style:width={`${([...chosenTasks].reduce((sum, label) => sum + (mockWeekPlan.find((item) => item.label === label)?.cost ?? 0), 0) / 7) * 100}%`}></i></div>
+      <div>
+        <span>ALLOCATED</span
+        ><strong
+          >{[...chosenTasks].reduce((sum, label) => sum + (mockWeekPlan.find((item) => item.label === label)?.cost ?? 0), 0)}
+          / 7</strong
+        >
+      </div>
+      <div class="capacity-track">
+        <i
+          style:width={`${([...chosenTasks].reduce((sum, label) => sum + (mockWeekPlan.find((item) => item.label === label)?.cost ?? 0), 0) / 7) * 100}%`}
+        ></i>
+      </div>
     </div>
     <div class="task-list">
       {#each mockWeekPlan as task}
-        <button class:selected={chosenTasks.has(task.label)} onclick={() => toggleTask(task.label)}>
+        <button
+          type="button"
+          class:selected={chosenTasks.has(task.label)}
+          onclick={() => toggleTask(task.label)}
+        >
           <span class="checkbox">{chosenTasks.has(task.label) ? '✓' : ''}</span>
-          <span><strong>{task.label}</strong><small>{task.cost} time {task.cost === 1 ? 'block' : 'blocks'}</small></span>
+          <span
+            ><strong>{task.label}</strong
+            ><small>{task.cost} time {task.cost === 1 ? 'block' : 'blocks'}</small></span
+          >
           <b>{task.cost}</b>
         </button>
       {/each}
     </div>
-    <button class="primary-action">LOCK IN THIS WEEK →</button>
-    <p class="integration-note">Prototype only — this button will later dispatch an ALLOCATE_TIME action.</p>
+    <button type="button" class="primary-action">LOCK IN THIS WEEK →</button>
+    <p class="integration-note">
+      Prototype only — this button will later dispatch an ALLOCATE_TIME action.
+    </p>
   {:else}
     <div class="resume-intro">
       <span class="avatar">CS</span>
-      <div><strong>Anonymous Student</strong><small>Fourth-year · Open to literally anything</small></div>
+      <div>
+        <strong>Anonymous Student</strong><small>Fourth-year · Open to literally anything</small>
+      </div>
     </div>
     <div class="experience-list">
       {#each mockExperiences as experience, index}
         <article>
           <span class="index">0{index + 1}</span>
-          <div><h3>{experience.title}</h3><p>{experience.meta}</p></div>
+          <div>
+            <h3>{experience.title}</h3>
+            <p>{experience.meta}</p>
+          </div>
           <span class="badge">{experience.score}</span>
         </article>
       {/each}

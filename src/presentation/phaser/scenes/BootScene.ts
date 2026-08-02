@@ -32,7 +32,9 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const track = this.add.rectangle(centerX, centerY + 38, 220, 5, 0x243330);
-    this.progressFill = this.add.rectangle(centerX - 110, centerY + 38, 5, 5, 0xe7ff74).setOrigin(0, 0.5);
+    this.progressFill = this.add
+      .rectangle(centerX - 110, centerY + 38, 5, 5, 0xe7ff74)
+      .setOrigin(0, 0.5);
 
     this.load.on('progress', (progress: number) => {
       this.progressFill.width = Math.max(5, 220 * progress);

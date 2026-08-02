@@ -5,9 +5,8 @@ function readTilemapProperty<T>(
   object: Phaser.Types.Tilemaps.TiledObject,
   name: string,
 ): T | undefined {
-  return object.properties?.find(
-    (property: Record<string, unknown>) => property?.name === name,
-  )?.value as T | undefined;
+  return object.properties?.find((property: Record<string, unknown>) => property?.name === name)
+    ?.value as T | undefined;
 }
 
 interface Interaction {
@@ -23,7 +22,10 @@ interface Interaction {
 export class WorldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private movementKeys!: Record<'up' | 'down' | 'left' | 'right' | 'interact', Phaser.Input.Keyboard.Key>;
+  private movementKeys!: Record<
+    'up' | 'down' | 'left' | 'right' | 'interact',
+    Phaser.Input.Keyboard.Key
+  >;
   private interactions!: Interaction[];
   private nearbyInteraction: Interaction | null = null;
   private prompt!: Phaser.GameObjects.Container;
@@ -53,10 +55,7 @@ export class WorldScene extends Phaser.Scene {
 
     const spawnsLayer = map.getObjectLayer('Spawns');
     const playerSpawnPoint = spawnsLayer?.objects.find((obj) => obj.name === 'player-start');
-    if (!playerSpawnPoint
-      || playerSpawnPoint.x === undefined
-      || playerSpawnPoint.y === undefined
-    ) {
+    if (!playerSpawnPoint || playerSpawnPoint.x === undefined || playerSpawnPoint.y === undefined) {
       throw new Error('Could not find player spawn point.');
     }
     this.player = this.physics.add.sprite(playerSpawnPoint.x, playerSpawnPoint.y, 'player', 1);
@@ -88,7 +87,12 @@ export class WorldScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    map.setCollisionByProperty({ collides: true }, true, true, structuresLayer as Phaser.Tilemaps.TilemapLayer);
+    map.setCollisionByProperty(
+      { collides: true },
+      true,
+      true,
+      structuresLayer as Phaser.Tilemaps.TilemapLayer,
+    );
     this.physics.add.collider(this.player, structuresLayer as Phaser.Tilemaps.TilemapLayer);
     this.player.setCollideWorldBounds(true);
 
@@ -100,9 +104,11 @@ export class WorldScene extends Phaser.Scene {
       const locationId = readTilemapProperty<string>(obj, 'locationId');
       const label = readTilemapProperty<string>(obj, 'label');
       const panel = readTilemapProperty<PanelId>(obj, 'panel');
-      
+
       if (!locationId || !label || !panel) {
-        throw new Error(`Could not read all required properties from interaction object: ${JSON.stringify(obj)}`);
+        throw new Error(
+          `Could not read all required properties from interaction object: ${JSON.stringify(obj)}`,
+        );
       }
 
       return {
@@ -128,12 +134,9 @@ export class WorldScene extends Phaser.Scene {
       this.prompt.setPosition(size.width / 2, size.height - 55);
     });
 
-    frontendBridge.on(
-      'ui:block-input',
-      ({ blocked }) => {
-        this.inputBlocked = blocked;
-      },
-    );
+    frontendBridge.on('ui:block-input', ({ blocked }) => {
+      this.inputBlocked = blocked;
+    });
 
     frontendBridge.emit('scene:ready', undefined);
   }
@@ -170,7 +173,6 @@ export class WorldScene extends Phaser.Scene {
         case 'up':
           this.player.setFrame(10);
           break;
-        case 'down':
         default:
           this.player.setFrame(1);
           break;
@@ -179,18 +181,17 @@ export class WorldScene extends Phaser.Scene {
 
     this.player.setDepth(this.player.y);
 
-    const nearby = this.interactions.find(
-      (interaction) =>
-        Phaser.Geom.Rectangle.Contains(
-          new Phaser.Geom.Rectangle(
-            interaction.x,
-            interaction.y,
-            interaction.width,
-            interaction.height,
-          ),
-          this.player.x,
-          this.player.y,
+    const nearby = this.interactions.find((interaction) =>
+      Phaser.Geom.Rectangle.Contains(
+        new Phaser.Geom.Rectangle(
+          interaction.x,
+          interaction.y,
+          interaction.width,
+          interaction.height,
         ),
+        this.player.x,
+        this.player.y,
+      ),
     );
 
     if (nearby !== this.nearbyInteraction) {
@@ -208,8 +209,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createInput(): void {
-    this.cursors = this.input.keyboard!.createCursorKeys();
-    this.movementKeys = this.input.keyboard!.addKeys({
+    const keyboard = this.input.keyboard;
+    if (!keyboard) {
+      throw new Error('Keyboard input is not available.');
+    }
+
+    this.cursors = keyboard.createCursorKeys();
+    this.movementKeys = keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       down: Phaser.Input.Keyboard.KeyCodes.S,
       left: Phaser.Input.Keyboard.KeyCodes.A,
@@ -219,7 +225,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createPrompt(): void {
-    const background = this.add.rectangle(0, 0, 150, 34, 0x0a100f, 0.92).setStrokeStyle(1, 0xe7ff74);
+    const background = this.add
+      .rectangle(0, 0, 150, 34, 0x0a100f, 0.92)
+      .setStrokeStyle(1, 0xe7ff74);
     const label = this.add
       .text(0, 0, '[ E ]  INTERACT', {
         fontFamily: 'monospace',
@@ -229,7 +237,10 @@ export class WorldScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.prompt = this.add.container(this.scale.width / 2, this.scale.height - 55, [background, label]);
+    this.prompt = this.add.container(this.scale.width / 2, this.scale.height - 55, [
+      background,
+      label,
+    ]);
     this.prompt.setScrollFactor(0).setDepth(100).setVisible(false);
   }
 }

@@ -38,14 +38,16 @@
     window.addEventListener('keydown', keyHandler);
 
     return () => {
-      unsubscribe.forEach((stop) => stop());
+      unsubscribe.forEach((stop) => {
+        stop();
+      });
       window.removeEventListener('keydown', keyHandler);
     };
   });
 </script>
 
 <svelte:head>
-  <meta name="theme-color" content="#0b1110" />
+  <meta name="theme-color" content="#0b1110">
 </svelte:head>
 
 <main class="app-shell">
@@ -74,12 +76,17 @@
   </section>
 
   {#if activePanel}
-    <button class="panel-scrim" onclick={() => (activePanel = null)} aria-label="Close panel"></button>
+    <button
+      type="button"
+      class="panel-scrim"
+      onclick={() => (activePanel = null)}
+      aria-label="Close panel"
+    ></button>
     <SidePanel panel={activePanel} onClose={() => (activePanel = null)} />
   {/if}
 
   <footer>
     <span>FRONTEND CONCEPT · MOCK DATA</span>
-    <span>MARKET SENTIMENT <strong>UNREASONABLY CONFIDENT ↑</strong></span>
+    <span>MARKET SENTIMENT <strong class="market-sentiment">UNREASONABLY CONFIDENT ↑</strong></span>
   </footer>
 </main>

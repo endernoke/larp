@@ -10,4 +10,4 @@
   });
 </script>
 
-<div class="game-canvas" bind:this={container} aria-label="Interactive campus map"></div>
+<div class="game-canvas" bind:this={container} role="img" aria-label="Interactive campus map"></div>
