@@ -13,6 +13,14 @@
     activePanel = activePanel === panel ? null : panel;
   }
 
+  $effect(() => {
+    if (activePanel) {
+      frontendBridge.emit('ui:block-input', { blocked: true });
+    } else {
+      frontendBridge.emit('ui:block-input', { blocked: false });
+    }
+  });
+
   onMount(() => {
     const unsubscribe = [
       frontendBridge.on('location:nearby', ({ label }) => (nearbyLabel = label)),

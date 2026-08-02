@@ -5,10 +5,15 @@ export interface LocationInteraction {
   panel: PanelId;
 }
 
+export interface UIBlockInputEvent {
+  blocked: boolean;
+}
+
 export interface FrontendEvents {
   'panel:open': { panel: PanelId };
   'location:nearby': { label: string | null };
   'location:interact': LocationInteraction;
+  'ui:block-input': UIBlockInputEvent;
   'scene:ready': undefined;
 }
 

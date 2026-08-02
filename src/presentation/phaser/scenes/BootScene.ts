@@ -42,7 +42,7 @@ export class BootScene extends Phaser.Scene {
     this.progressFill.setDepth(2);
 
     this.load.image('campus-tiles', 'assets/tiles/campus-tiles.png');
-    this.load.tilemapTiledJSON('campus-map', 'assets/maps/campus-map.tmj');
+    this.load.tilemapTiledJSON('campus-map', 'assets/maps/campus.tmj');
     this.load.spritesheet('player', 'assets/sprites/player.png', {
       frameWidth: 16,
       frameHeight: 24,

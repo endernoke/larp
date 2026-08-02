@@ -11,7 +11,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     physics: {
       default: 'arcade',
       arcade: {
-        debug: false,
+        debug: true,
       },
     },
     scale: {
