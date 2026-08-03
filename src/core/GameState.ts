@@ -66,6 +66,7 @@ export function createInitialGameState(seed: string): GameState {
       pastEvents: [],
       activeEffects: [],
       emittedFacts: [],
+      signals: [],
     },
     seed,
     rng: seedrandom(seed, {

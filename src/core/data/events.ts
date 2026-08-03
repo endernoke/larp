@@ -8,7 +8,7 @@ export const worldEvents: WorldEventDefinition[] = [
       'A major dependency was compromised by attackers, leading to a large-scale data breach and widespread disruptions in the supply chain.',
     prerequisites: [],
     baseWeight: 0.5,
-    effectIds: ['1'],
+    effectIds: ['1', '2'],
     emittedFactIds: ['1', '2'],
   },
 ];
@@ -36,12 +36,14 @@ export const emittedFacts: EmittedFact[] = [
   {
     id: '1',
     topic: 'cybersecurity-hiring',
+    sector: 'cybersecurity',
     direction: 'up',
     magnitude: 2,
   },
   {
     id: '2',
     topic: 'dependency-auditing',
+    sector: 'cybersecurity',
     direction: 'up',
     magnitude: 3,
   },

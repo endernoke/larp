@@ -1,13 +1,16 @@
 <script lang="ts">
+  import type { GameState } from '../../core/GameState';
+
   import type { PanelId } from '../bridge/frontendBridge';
-  import { mockExperiences, mockFeed, mockWeekPlan } from '../mocks/mockData';
+  import { mockExperiences, mockWeekPlan } from '../mocks/mockData';
 
   interface Props {
+    gameState: GameState;
     panel: PanelId;
     onClose: () => void;
   }
 
-  let { panel, onClose }: Props = $props();
+  let { gameState, panel, onClose }: Props = $props();
   let chosenTasks = $state(
     new Set(mockWeekPlan.filter((task) => task.selected).map((task) => task.label)),
   );
@@ -40,12 +43,15 @@
       <span class="selected">All signals</span><span>Messages</span><span>Jobs</span>
     </div>
     <div class="feed-list">
-      {#each mockFeed as item}
-        <article class="feed-card {item.tone}">
-          <div class="feed-meta"><strong>{item.source}</strong><span>{item.age}</span></div>
-          <h3>{item.title}</h3>
-          <p>{item.body}</p>
-          <div class="feed-footer"><span>MARK AS USEFUL</span><span>•••</span></div>
+      {#each gameState.world.signals as item}
+        {@const title = item.message.split('\n').length > 1 ? item.message.split('\n')[0] : null}
+        {@const body = item.message.split('\n').length > 1 ? item.message.split('\n').slice(1).join('\n') : item.message}
+        <article class="feed-card">
+          <div class="feed-meta"><strong>{item.channel}</strong><span>1h</span></div>
+          {#if title}
+            <h3>{title}</h3>
+          {/if}
+          <p>{body}</p>
         </article>
       {/each}
     </div>

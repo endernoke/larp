@@ -1,4 +1,5 @@
 import { emittedFacts, worldEffects, worldEvents } from './data/events';
+import { signalTemplates } from './data/signalTemplates';
 import type { GameState } from './GameState';
 import type { EmittedFact } from './WorldState';
 
@@ -29,6 +30,8 @@ export function advanceWeek(state: GameState): GameState {
   newState.world.emittedFacts = newState.world.emittedFacts.filter((fact) => {
     return fact.magnitude > 0;
   });
+
+  newState.world.signals = [];
 
   newState.currentWeek += 1;
 
@@ -85,6 +88,7 @@ export function advanceWeek(state: GameState): GameState {
         newState.world.emittedFacts.push({
           id: `${newState.currentWeek}-${factDefinition.id}`,
           topic: factDefinition.topic,
+          sector: factDefinition.sector,
           direction: factDefinition.direction,
           magnitude: factDefinition.magnitude,
         });
@@ -115,6 +119,32 @@ export function advanceWeek(state: GameState): GameState {
     }
     return acc;
   }, [] as EmittedFact[]);
+
+  newState.world.emittedFacts.forEach((fact) => {
+    const sectorStatus = newState.world.sectors[fact.sector];
+    const relevantSignals = signalTemplates.filter(
+      (signal) =>
+        signal.applicableTopics.includes(fact.topic) &&
+        signal.applicableDirections.includes(fact.direction),
+    );
+    if (!sectorStatus) return;
+    relevantSignals.forEach((signalTemplate) => {
+      const probability = (((1 / (4 - fact.magnitude)) * sectorStatus.hype) / 50) * 0.8;
+      if (newState.rng() < probability) {
+        const messageTemplate =
+          signalTemplate.messageTemplates[
+            Math.floor(newState.rng() * signalTemplate.messageTemplates.length)
+          ];
+        const message = messageTemplate
+          .replace('{sector}', fact.sector)
+          .replace('{rand}', Math.floor(newState.rng() * 10).toString());
+        newState.world.signals.push({
+          channel: signalTemplate.channel,
+          message: message,
+        });
+      }
+    });
+  });
 
   return newState;
 }

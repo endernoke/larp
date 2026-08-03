@@ -1,3 +1,5 @@
+import type { Signal } from './Signal';
+
 export type SectorId = 'web' | 'ai' | 'cybersecurity' | 'infrastructure' | 'game-dev' | 'research';
 
 export interface SectorState {
@@ -48,6 +50,7 @@ export interface WorldEffect {
 export interface EmittedFact {
   id: string;
   topic: string;
+  sector: SectorId;
   direction: string;
   magnitude: 1 | 2 | 3;
 }
@@ -57,4 +60,5 @@ export interface WorldState {
   pastEvents: WorldEvent[];
   activeEffects: WorldEffect[];
   emittedFacts: EmittedFact[];
+  signals: Signal[];
 }

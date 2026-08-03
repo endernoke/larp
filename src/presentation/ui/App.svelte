@@ -101,7 +101,7 @@
       onclick={() => (activePanel = null)}
       aria-label="Close panel"
     ></button>
-    <SidePanel panel={activePanel} onClose={() => (activePanel = null)} />
+    <SidePanel {gameState} panel={activePanel} onClose={() => (activePanel = null)} />
   {/if}
 
   <footer>
