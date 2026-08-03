@@ -19,7 +19,7 @@ export const worldEffects: WorldEffectDefinition[] = [
     sourceEventId: '1',
     targetPath: 'world.sectors.cybersecurity.demand',
     duration: 2,
-    amount: 20,
+    initialDelta: 20,
     decayPerWeek: 5,
   },
   {
@@ -27,7 +27,7 @@ export const worldEffects: WorldEffectDefinition[] = [
     sourceEventId: '1',
     targetPath: 'world.sectors.cybersecurity.hype',
     duration: 2,
-    amount: 30,
+    initialDelta: 30,
     decayPerWeek: 10,
   },
 ];

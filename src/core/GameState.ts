@@ -61,6 +61,13 @@ export function createInitialGameState(seed: string): GameState {
           competition: 50,
           compensation: 50,
           entryBarrier: 50,
+          baseline: {
+            demand: 50,
+            hype: 50,
+            competition: 50,
+            compensation: 50,
+            entryBarrier: 50,
+          },
         },
       },
       pastEvents: [],

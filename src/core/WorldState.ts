@@ -1,14 +1,26 @@
 import type { Signal } from './Signal';
 
-export type SectorId = 'web' | 'ai' | 'cybersecurity' | 'infrastructure' | 'game-dev' | 'research';
+export const sectorIds = [
+  'web',
+  'ai',
+  'cybersecurity',
+  'infrastructure',
+  'game-dev',
+  'research',
+] as const;
+export type SectorId = (typeof sectorIds)[number];
 
-export interface SectorState {
+export interface BaseSectorState {
   demand: number;
   hype: number;
   competition: number;
   compensation: number;
   entryBarrier: number;
 }
+
+export type SectorState = BaseSectorState & {
+  readonly baseline: BaseSectorState;
+};
 
 export interface WorldEventCondition {
   path: string;
@@ -37,14 +49,14 @@ export interface WorldEffectDefinition {
   sourceEventId: string;
   targetPath: string;
   duration: number;
-  amount: number;
+  initialDelta: number;
   decayPerWeek: number;
 }
 
 export interface WorldEffect {
   startWeek: number;
   definitionId: string;
-  amount: number;
+  delta: number;
 }
 
 export interface EmittedFact {

@@ -1,7 +1,7 @@
 import { emittedFacts, worldEffects, worldEvents } from './data/events';
 import { signalTemplates } from './data/signalTemplates';
 import type { GameState } from './GameState';
-import type { EmittedFact } from './WorldState';
+import { type EmittedFact, sectorIds } from './WorldState';
 
 // biome-ignore lint/suspicious/noExplicitAny: needs to work with any object type
 function updateObjectAtPath(obj: any, path: string, updateFn: (value: any) => any): void {
@@ -20,8 +20,7 @@ export function advanceWeek(state: GameState): GameState {
   newState.world.activeEffects.forEach((effect) => {
     const effectDefinition = worldEffects.find((e) => e.id === effect.definitionId);
     if (!effectDefinition) return;
-    // effect.amount -= effectDefinition.decayPerWeek;
-    effect.amount = -effectDefinition.decayPerWeek;
+    effect.delta -= effectDefinition.decayPerWeek;
   });
 
   newState.world.emittedFacts.forEach((fact) => {
@@ -77,7 +76,7 @@ export function advanceWeek(state: GameState): GameState {
         newState.world.activeEffects.push({
           startWeek: newState.currentWeek,
           definitionId: effectDefinition.id,
-          amount: effectDefinition.amount,
+          delta: effectDefinition.initialDelta,
         });
       }
     });
@@ -96,16 +95,30 @@ export function advanceWeek(state: GameState): GameState {
     });
   });
 
+  // Reset all sector values to baseline, then re-apply active effects
+  // There's probably a more efficient way to do this but this is easier to implement
+  sectorIds.forEach((sectorId) => {
+    const sectorStatus = newState.world.sectors[sectorId];
+    if (!sectorStatus) return;
+
+    sectorStatus.demand = sectorStatus.baseline.demand;
+    sectorStatus.hype = sectorStatus.baseline.hype;
+    sectorStatus.competition = sectorStatus.baseline.competition;
+    sectorStatus.compensation = sectorStatus.baseline.compensation;
+    sectorStatus.entryBarrier = sectorStatus.baseline.entryBarrier;
+  });
+
   newState.world.activeEffects.forEach((effect) => {
     const effectDefinition = worldEffects.find((e) => e.id === effect.definitionId);
     if (!effectDefinition) return;
     updateObjectAtPath(
       newState,
       effectDefinition.targetPath,
-      (value: number) => value + effect.amount,
+      (value: number) => value + effect.delta,
     );
   });
 
+  // Deduplicate emitted facts by topic and direction, keeping the one with the highest magnitude
   newState.world.emittedFacts = newState.world.emittedFacts.reduce((acc, fact) => {
     const existingFactIndex = acc.findIndex(
       (f) => f.topic === fact.topic && f.direction === fact.direction,
@@ -129,7 +142,7 @@ export function advanceWeek(state: GameState): GameState {
     );
     if (!sectorStatus) return;
     relevantSignals.forEach((signalTemplate) => {
-      const probability = (((1 / (4 - fact.magnitude)) * sectorStatus.hype) / 50) * 0.8;
+      const probability = (1 / (4 - fact.magnitude)) * (sectorStatus.hype / 50) * 0.8;
       if (newState.rng() < probability) {
         const messageTemplate =
           signalTemplate.messageTemplates[
