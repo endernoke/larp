@@ -68,21 +68,9 @@
   <section class="game-stage" class:panel-open={activePanel !== null}>
     <GameCanvas />
 
-    <div class="map-title">
-      <p class="eyebrow">CAMPUS DISTRICT</p>
-      <h1>Opportunity is allegedly nearby.</h1>
-    </div>
-
     <div class="controls-hint">
       <span><kbd>WASD</kbd> / <kbd>ARROWS</kbd> move</span>
       <span><kbd>E</kbd> interact</span>
-      <button
-        type="button"
-        class="panel-button"
-        onclick={() => gameStore.dispatch({ type: 'advance-week' })}
-      >
-        <span>Open Phone</span>
-      </button>
     </div>
 
     {#if nearbyLabel}
@@ -103,9 +91,4 @@
     ></button>
     <SidePanel {gameState} panel={activePanel} onClose={() => (activePanel = null)} />
   {/if}
-
-  <footer>
-    <span>FRONTEND CONCEPT · MOCK DATA</span>
-    <span>MARKET SENTIMENT <strong class="market-sentiment">UNREASONABLY CONFIDENT ↑</strong></span>
-  </footer>
 </main>

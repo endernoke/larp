@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameState } from '../../core/GameState';
+  import { gameStore } from '../../core/GameStore';
 
   import type { PanelId } from '../bridge/frontendBridge';
   import { mockExperiences, mockWeekPlan } from '../mocks/mockData';
@@ -86,10 +87,13 @@
         </button>
       {/each}
     </div>
-    <button type="button" class="primary-action">LOCK IN THIS WEEK →</button>
-    <p class="integration-note">
-      Prototype only — this button will later dispatch an ALLOCATE_TIME action.
-    </p>
+    <button
+      type="button"
+      class="primary-action"
+      onclick={() => gameStore.dispatch({ type: 'advance-week' })}
+    >
+      LOCK IN THIS WEEK →
+    </button>
   {:else}
     <div class="resume-intro">
       <span class="avatar">CS</span>
