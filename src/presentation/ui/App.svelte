@@ -34,6 +34,7 @@
 
     const stopState = gameStore.subscribe((state) => {
       gameState = state;
+      console.log(gameState);
     });
 
     const stopEvents = gameStore.onOutcome((_outcome) => {});

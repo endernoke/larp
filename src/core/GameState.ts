@@ -1,3 +1,4 @@
+import seedrandom from 'seedrandom';
 import type { PlayerState } from './PlayerState';
 import type { WorldState } from './WorldState';
 
@@ -7,6 +8,7 @@ export interface GameState {
   player: PlayerState;
   world: WorldState;
   seed: string;
+  rng: seedrandom.StatefulPRNG<seedrandom.State.Arc4>;
 }
 
 export type GameAction =
@@ -52,11 +54,22 @@ export function createInitialGameState(seed: string): GameState {
       calendar: '',
     },
     world: {
-      sectors: [],
+      sectors: {
+        cybersecurity: {
+          demand: 50,
+          hype: 50,
+          competition: 50,
+          compensation: 50,
+          entryBarrier: 50,
+        },
+      },
       pastEvents: [],
       activeEffects: [],
       emittedFacts: [],
     },
     seed,
+    rng: seedrandom(seed, {
+      state: true,
+    }),
   };
 }

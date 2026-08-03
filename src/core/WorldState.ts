@@ -1,8 +1,6 @@
 export type SectorId = 'web' | 'ai' | 'cybersecurity' | 'infrastructure' | 'game-dev' | 'research';
 
 export interface SectorState {
-  id: SectorId;
-  name: string;
   demand: number;
   hype: number;
   competition: number;
@@ -22,8 +20,8 @@ export interface WorldEventDefinition {
   description: string;
   prerequisites: WorldEventCondition[];
   baseWeight: number;
-  effects: WorldEffect[];
-  emittedFacts: EmittedFact[];
+  effectIds: string[];
+  emittedFactIds: string[];
 }
 
 export interface WorldEvent {
@@ -32,25 +30,30 @@ export interface WorldEvent {
   occuranceWeek: number;
 }
 
-export interface WorldEffect {
+export interface WorldEffectDefinition {
   id: string;
   sourceEventId: string;
   targetPath: string;
-  startWeek: number;
   duration: number;
   amount: number;
   decayPerWeek: number;
 }
 
-interface EmittedFact {
+export interface WorldEffect {
+  startWeek: number;
+  definitionId: string;
+  amount: number;
+}
+
+export interface EmittedFact {
   id: string;
   topic: string;
   direction: string;
-  magnitude: 'low' | 'medium' | 'high';
+  magnitude: 1 | 2 | 3;
 }
 
 export interface WorldState {
-  sectors: SectorState[];
+  sectors: Partial<Record<SectorId, SectorState>>;
   pastEvents: WorldEvent[];
   activeEffects: WorldEffect[];
   emittedFacts: EmittedFact[];
