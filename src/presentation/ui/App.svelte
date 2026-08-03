@@ -1,9 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { gameStore } from '../../core/GameStore';
   import { frontendBridge, type PanelId } from '../bridge/frontendBridge';
   import GameCanvas from './GameCanvas.svelte';
   import SidePanel from './SidePanel.svelte';
   import TopBar from './TopBar.svelte';
+
+  let gameState = $state(gameStore.state);
 
   let activePanel = $state<PanelId | null>(null);
   let nearbyLabel = $state<string | null>(null);
@@ -29,6 +32,12 @@
       frontendBridge.on('scene:ready', () => (sceneReady = true)),
     ];
 
+    const stopState = gameStore.subscribe((state) => {
+      gameState = state;
+    });
+
+    const stopEvents = gameStore.onOutcome((_outcome) => {});
+
     const keyHandler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') activePanel = null;
       if (event.key === '1') activePanel = 'phone';
@@ -41,6 +50,8 @@
       unsubscribe.forEach((stop) => {
         stop();
       });
+      stopState();
+      stopEvents();
       window.removeEventListener('keydown', keyHandler);
     };
   });
@@ -51,7 +62,7 @@
 </svelte:head>
 
 <main class="app-shell">
-  <TopBar {activePanel} onOpen={openPanel} />
+  <TopBar {gameState} {activePanel} onOpen={openPanel} />
 
   <section class="game-stage" class:panel-open={activePanel !== null}>
     <GameCanvas />
@@ -64,6 +75,13 @@
     <div class="controls-hint">
       <span><kbd>WASD</kbd> / <kbd>ARROWS</kbd> move</span>
       <span><kbd>E</kbd> interact</span>
+      <button
+        type="button"
+        class="panel-button"
+        onclick={() => gameStore.dispatch({ type: 'advance-week' })}
+      >
+        <span>Open Phone</span>
+      </button>
     </div>
 
     {#if nearbyLabel}

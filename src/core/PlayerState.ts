@@ -14,9 +14,9 @@ export interface ExperienceEntry {
 }
 
 export interface PlayerState {
-  wealth: number;
+  money: number;
   wellBeing: number;
-  grades: number;
+  gpa: number;
   visibility: number;
 
   experiences: ExperienceEntry[];
