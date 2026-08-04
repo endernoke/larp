@@ -1,6 +1,9 @@
 import { mount } from 'svelte';
+import '@fontsource-variable/pixelify-sans';
+import '@fontsource/silkscreen/400.css';
+import '@fontsource/silkscreen/700.css';
 import App from './presentation/ui/App.svelte';
-import './presentation/ui/styles.css';
+import './presentation/ui/app.css';
 
 const target = document.getElementById('app');
 if (!target) {

@@ -7,28 +7,60 @@
   import TopBar from './TopBar.svelte';
 
   let gameState = $state(gameStore.state);
-
   let activePanel = $state<PanelId | null>(null);
+  let queuedPanel = $state<PanelId | null>(null);
+  let panelClosing = $state(false);
   let nearbyLabel = $state<string | null>(null);
   let sceneReady = $state(false);
 
+  function showPanel(panel: PanelId): void {
+    if (activePanel) {
+      if (activePanel !== panel || panelClosing) {
+        queuedPanel = panel;
+        panelClosing = true;
+      }
+      return;
+    }
+
+    queuedPanel = null;
+    panelClosing = false;
+    activePanel = panel;
+  }
+
   function openPanel(panel: PanelId): void {
-    activePanel = activePanel === panel ? null : panel;
+    if (activePanel === panel && !panelClosing) {
+      closePanel();
+      return;
+    }
+    showPanel(panel);
+  }
+
+  function closePanel(): void {
+    if (!activePanel) return;
+    queuedPanel = null;
+    if (panelClosing) return;
+    panelClosing = true;
+  }
+
+  function finishPanelClose(event: AnimationEvent): void {
+    if (panelClosing && event.animationName === 'panel-exit') {
+      activePanel = queuedPanel;
+      queuedPanel = null;
+      panelClosing = false;
+    }
   }
 
   $effect(() => {
-    if (activePanel) {
-      frontendBridge.emit('ui:block-input', { blocked: true });
-    } else {
-      frontendBridge.emit('ui:block-input', { blocked: false });
-    }
+    frontendBridge.emit('ui:block-input', {
+      blocked: activePanel !== null || queuedPanel !== null,
+    });
   });
 
   onMount(() => {
     const unsubscribe = [
       frontendBridge.on('location:nearby', ({ label }) => (nearbyLabel = label)),
-      frontendBridge.on('location:interact', ({ panel }) => (activePanel = panel)),
-      frontendBridge.on('panel:open', ({ panel }) => (activePanel = panel)),
+      frontendBridge.on('location:interact', ({ panel }) => showPanel(panel)),
+      frontendBridge.on('panel:open', ({ panel }) => showPanel(panel)),
       frontendBridge.on('scene:ready', () => (sceneReady = true)),
     ];
 
@@ -36,14 +68,13 @@
       gameState = state;
       console.log(gameState);
     });
-
     const stopEvents = gameStore.onOutcome((_outcome) => {});
 
     const keyHandler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') activePanel = null;
-      if (event.key === '1') activePanel = 'phone';
-      if (event.key === '2') activePanel = 'planner';
-      if (event.key === '3') activePanel = 'resume';
+      if (event.key === 'Escape') closePanel();
+      if (event.key === '1') showPanel('phone');
+      if (event.key === '2') showPanel('planner');
+      if (event.key === '3') showPanel('resume');
     };
     window.addEventListener('keydown', keyHandler);
 
@@ -59,36 +90,75 @@
 </script>
 
 <svelte:head>
-  <meta name="theme-color" content="#0b1110">
+  <meta name="theme-color" content="#07110f">
 </svelte:head>
 
-<main class="app-shell">
+<main
+  class="grid h-full w-full grid-rows-[4.5rem_minmax(0,1fr)] bg-ink md:grid-rows-[5rem_minmax(0,1fr)]"
+>
   <TopBar {gameState} {activePanel} onOpen={openPanel} />
 
-  <section class="game-stage" class:panel-open={activePanel !== null}>
+  <section class="relative min-h-0 overflow-hidden bg-screen">
     <GameCanvas />
 
-    <div class="controls-hint">
-      <span><kbd>WASD</kbd> / <kbd>ARROWS</kbd> move</span>
-      <span><kbd>E</kbd> interact</span>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 z-10 opacity-[0.06] mix-blend-screen [background-image:repeating-linear-gradient(0deg,transparent_0,transparent_3px,#d9ff57_4px)]"
+    ></div>
+
+    <div
+      class="absolute bottom-3 left-3 z-20 flex items-center gap-3 border-2 border-line bg-screen/90 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-muted shadow-pixel backdrop-blur-sm sm:bottom-5 sm:left-5 sm:gap-5"
+    >
+      <span class="flex items-center gap-2">
+        <kbd
+          class="border border-muted/60 bg-console px-1.5 py-0.5 font-display text-[8px] text-paper"
+          >WASD</kbd
+        >
+        <span class="hidden sm:inline">Move</span>
+      </span>
+      <span class="flex items-center gap-2">
+        <kbd
+          class="border border-acid/60 bg-console px-1.5 py-0.5 font-display text-[8px] text-acid"
+          >E</kbd
+        >
+        <span class="hidden sm:inline">Interact</span>
+      </span>
     </div>
 
     {#if nearbyLabel}
-      <div class="nearby-pill"><i></i>{nearbyLabel}</div>
+      <div
+        class="absolute top-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 border-2 border-acid bg-screen/95 px-4 py-2 text-center font-display text-[9px] text-acid shadow-pixel"
+      >
+        <i
+          class="h-2 w-2 animate-[blink_1s_steps(2,end)_infinite] bg-acid shadow-[0_0_10px_#d9ff57]"
+        ></i>
+        {nearbyLabel}
+      </div>
     {/if}
 
     {#if !sceneReady}
-      <div class="loading-badge">Connecting to campus Wi-Fi…</div>
+      <div
+        class="absolute right-4 bottom-4 z-20 border-2 border-line bg-screen/95 px-3 py-2 font-display text-[8px] tracking-[0.08em] text-muted shadow-pixel"
+      >
+        CONNECTING TO CAMPUS WI-FI<span class="animate-[blink_1s_steps(2,end)_infinite]">_</span>
+      </div>
     {/if}
   </section>
 
   {#if activePanel}
     <button
       type="button"
-      class="panel-scrim"
-      onclick={() => (activePanel = null)}
+      class="fixed inset-0 z-40 cursor-default bg-[#020605]/80 backdrop-blur-[3px]"
+      data-panel-scrim={panelClosing ? 'exit' : 'enter'}
+      onclick={closePanel}
       aria-label="Close panel"
     ></button>
-    <SidePanel {gameState} panel={activePanel} onClose={() => (activePanel = null)} />
+    <div
+      class="pointer-events-none fixed inset-0 z-50 grid place-items-center p-3 sm:p-6"
+      data-panel-motion={panelClosing ? 'exit' : 'enter'}
+      onanimationend={finishPanelClose}
+    >
+      <SidePanel {gameState} panel={activePanel} onClose={closePanel} />
+    </div>
   {/if}
 </main>

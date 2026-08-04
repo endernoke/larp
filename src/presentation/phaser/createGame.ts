@@ -6,7 +6,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    backgroundColor: '#0f1817',
+    backgroundColor: '#0a1412',
     pixelArt: true,
     physics: {
       default: 'arcade',

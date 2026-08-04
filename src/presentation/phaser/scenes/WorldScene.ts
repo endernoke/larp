@@ -225,20 +225,23 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createPrompt(): void {
+    const shadow = this.add.rectangle(4, 4, 188, 42, 0x020504, 0.8);
     const background = this.add
-      .rectangle(0, 0, 150, 34, 0x0a100f, 0.92)
-      .setStrokeStyle(1, 0xe7ff74);
+      .rectangle(0, 0, 188, 42, 0x0a1412, 0.96)
+      .setStrokeStyle(2, 0xd9ff57);
+    const cursor = this.add.rectangle(-75, 0, 7, 7, 0xd9ff57);
     const label = this.add
-      .text(0, 0, '[ E ]  INTERACT', {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        fontStyle: 'bold',
-        color: '#e7ff74',
+      .text(7, 0, '[ E ]  INTERACT', {
+        fontFamily: 'Silkscreen',
+        fontSize: '9px',
+        color: '#d9ff57',
       })
       .setOrigin(0.5);
 
     this.prompt = this.add.container(this.scale.width / 2, this.scale.height - 55, [
+      shadow,
       background,
+      cursor,
       label,
     ]);
     this.prompt.setScrollFactor(0).setDepth(100).setVisible(false);
