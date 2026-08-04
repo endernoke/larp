@@ -1,13 +1,36 @@
-export type ExperienceType = 'internship' | 'job' | 'hackathon' | 'coursework' | 'research';
+export const experienceTypes = [
+  'internship',
+  'job',
+  'project',
+  'hackathon',
+  'coursework',
+  'research',
+  'misc',
+] as const;
+export type ExperienceType = (typeof experienceTypes)[number];
 
-export interface ExperienceEntry {
+export interface ExperienceEntryDefinition {
   id: string;
   type: ExperienceType;
   title: string;
   tag: string[];
+  baseRequiredTime: number;
+  deadlineWeeks?: number;
+}
+
+export interface ExperienceEntry {
+  id: string;
+  definitionId: string;
+  type: ExperienceType;
+  title: string;
+  tag: string[];
+  actualRequiredTime: number;
+  completedTimeUnits: number;
+  status: 'not-started' | 'in-progress' | 'completed';
+  currentAllocatedTimeUnits: number;
   startWeek: number;
+  deadlineWeeks?: number;
   endWeek: number;
-  completionPercentage: number;
   quality: number;
   impact: number;
   collaborators: string[];
@@ -19,6 +42,6 @@ export interface PlayerState {
   gpa: number;
   visibility: number;
 
-  experiences: ExperienceEntry[];
-  calendar: string;
+  work: ExperienceEntry[];
+  availableOpportunities: ExperienceEntryDefinition[];
 }

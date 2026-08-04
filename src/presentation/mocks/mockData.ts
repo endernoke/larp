@@ -5,11 +5,5 @@ export const mockWeekPlan = [
   { label: 'Touch grass', cost: 1, selected: false },
 ];
 
-export const mockExperiences = [
-  { title: 'Coursework Compiler', meta: 'Systems · C++', score: 'unfinished' },
-  { title: 'Campus Map Prototype', meta: 'Web · Accessibility', score: '58 quality' },
-  { title: 'README typo fix', meta: 'Open source · Collaboration', score: 'merged' },
-];
-
 // TODO(backend): Replace these exported constants with selectors over the
 // authoritative GameState and relational content repository.

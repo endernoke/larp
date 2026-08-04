@@ -1,9 +1,8 @@
 <script lang="ts">
+  import { SvelteMap } from 'svelte/reactivity';
   import type { GameState } from '../../core/GameState';
   import { gameStore } from '../../core/GameStore';
-
   import type { PanelId } from '../bridge/frontendBridge';
-  import { mockExperiences, mockWeekPlan } from '../mocks/mockData';
 
   interface Props {
     gameState: GameState;
@@ -12,22 +11,31 @@
   }
 
   let { gameState, panel, onClose }: Props = $props();
-  let chosenTasks = $state(
-    new Set(mockWeekPlan.filter((task) => task.selected).map((task) => task.label)),
+  let pendingTaskTimeAllocations = $state(
+    new SvelteMap<string, number>(
+      gameState.player.work.map((experience) => [
+        experience.id,
+        experience.currentAllocatedTimeUnits,
+      ]),
+    ),
   );
+  let pendingNewTimeAllocations = $state(new SvelteMap<string, number>());
+
+  $effect(() => {
+    pendingTaskTimeAllocations = new SvelteMap(
+      gameState.player.work.map((experience) => [
+        experience.id,
+        experience.currentAllocatedTimeUnits,
+      ]),
+    );
+    pendingNewTimeAllocations.clear();
+  });
 
   const panelTitles: Record<PanelId, { eyebrow: string; title: string }> = {
     phone: { eyebrow: 'SIGNAL TERMINAL', title: 'Your extremely reliable feed' },
     planner: { eyebrow: 'WEEKLY ALLOCATION', title: 'Spend seven blocks wisely' },
     resume: { eyebrow: 'EVIDENCE INVENTORY', title: 'Things you claim to have done' },
   };
-
-  function toggleTask(label: string): void {
-    const next = new Set(chosenTasks);
-    if (next.has(label)) next.delete(label);
-    else next.add(label);
-    chosenTasks = next;
-  }
 </script>
 
 <aside class="side-panel" aria-label={panelTitles[panel].title}>
@@ -57,36 +65,121 @@
       {/each}
     </div>
   {:else if panel === 'planner'}
+    {@const shownTasks = gameState.player.work.filter((experience) => experience.status !== 'completed')}
+    {@const shownOpportunities = gameState.player.availableOpportunities}
+    {@const totalAllocatedTime = [...pendingTaskTimeAllocations.values()].reduce((sum, time) => sum + time, 0) + [...pendingNewTimeAllocations.values()].reduce((sum, time) => sum + time, 0)}
     <div class="capacity">
       <div>
-        <span>ALLOCATED</span
-        ><strong
-          >{[...chosenTasks].reduce((sum, label) => sum + (mockWeekPlan.find((item) => item.label === label)?.cost ?? 0), 0)}
-          / 7</strong
-        >
+        <span>ALLOCATED</span><strong>{totalAllocatedTime}/ 7</strong>
       </div>
       <div class="capacity-track">
-        <i
-          style:width={`${([...chosenTasks].reduce((sum, label) => sum + (mockWeekPlan.find((item) => item.label === label)?.cost ?? 0), 0) / 7) * 100}%`}
-        ></i>
+        <i style:width={`${(totalAllocatedTime / 7) * 100}%`}></i>
       </div>
     </div>
     <div class="task-list">
-      {#each mockWeekPlan as task}
-        <button
-          type="button"
-          class:selected={chosenTasks.has(task.label)}
-          onclick={() => toggleTask(task.label)}
+      {#each shownTasks as task}
+        <span
+          ><strong>{task.title}</strong
+          ><small
+            >Estimated {task.actualRequiredTime} time blocks required,
+            {task.completedTimeUnits}
+            time blocks completed</small
+          ></span
         >
-          <span class="checkbox">{chosenTasks.has(task.label) ? '✓' : ''}</span>
-          <span
-            ><strong>{task.label}</strong
-            ><small>{task.cost} time {task.cost === 1 ? 'block' : 'blocks'}</small></span
+        <div class="time-allocation">
+          <button
+            type="button"
+            class="decrement"
+            disabled={!pendingTaskTimeAllocations.get(task.id)}
+            onclick={() => {
+                const current = pendingTaskTimeAllocations.get(task.id) ?? 0;
+                pendingTaskTimeAllocations.set(task.id, Math.max(0, current - 1));
+              }}
           >
-          <b>{task.cost}</b>
-        </button>
+            −
+          </button>
+          <span>{pendingTaskTimeAllocations.get(task.id) ?? 0}</span>
+          <button
+            type="button"
+            class="increment"
+            disabled={totalAllocatedTime >= 9}
+            onclick={() => {
+                const current = pendingTaskTimeAllocations.get(task.id) ?? 0;
+                pendingTaskTimeAllocations.set(task.id, current + 1);
+              }}
+          >
+            +
+          </button>
+        </div>
       {/each}
     </div>
+    <div class="task-list">
+      {#each shownOpportunities as opportunity}
+        <article>
+          <span
+            ><strong>{opportunity.title}</strong
+            ><small>Estimated {opportunity.baseRequiredTime} time blocks required</small></span
+          >
+          <div class="time-allocation">
+            <button
+              type="button"
+              class="decrement"
+              disabled={!pendingNewTimeAllocations.get(opportunity.id)}
+              onclick={() => {
+                const current = pendingNewTimeAllocations.get(opportunity.id) ?? 0;
+                pendingNewTimeAllocations.set(opportunity.id, Math.max(0, current - 1));
+              }}
+            >
+              −
+            </button>
+            <span>{pendingNewTimeAllocations.get(opportunity.id) ?? 0}</span>
+            <button
+              type="button"
+              class="increment"
+              disabled={totalAllocatedTime >= 9}
+              onclick={() => {
+                const current = pendingNewTimeAllocations.get(opportunity.id) ?? 0;
+                pendingNewTimeAllocations.set(opportunity.id, current + 1);
+              }}
+            >
+              +
+            </button>
+          </div>
+        </article>
+      {/each}
+    </div>
+    <button
+      type="button"
+      class="secondary-action"
+      onclick={() => {
+        let failed = false;
+        for (const [experienceId, allocatedTimeUnits] of pendingTaskTimeAllocations.entries()) {
+          const result = gameStore.dispatch({
+            type: 'add-to-planner',
+            experienceId,
+            allocatedTimeUnits,
+          });
+          if (result.outcomes.some((outcome) => outcome.type === 'action-rejected')) {
+            failed = true;
+            break;
+          }
+        }
+        if (failed) return;
+        for (const [experienceDefinitionId, allocatedTimeUnits] of pendingNewTimeAllocations.entries()) {
+          const result = gameStore.dispatch({
+            type: 'add-to-planner',
+            experienceDefinitionId,
+            allocatedTimeUnits,
+          });
+          if (result.outcomes.some((outcome) => outcome.type === 'action-rejected')) {
+            failed = true;
+            break;
+          }
+        }
+      }}
+    >
+      CONFIRM TIME ALLOCATIONS
+    </button>
     <button
       type="button"
       class="primary-action"
@@ -95,6 +188,7 @@
       LOCK IN THIS WEEK →
     </button>
   {:else}
+    {@const experiences = gameState.player.work.filter((experience) => experience.status !== 'not-started')}
     <div class="resume-intro">
       <span class="avatar">CS</span>
       <div>
@@ -102,22 +196,15 @@
       </div>
     </div>
     <div class="experience-list">
-      {#each mockExperiences as experience, index}
+      {#each experiences as experience, index}
         <article>
           <span class="index">0{index + 1}</span>
           <div>
             <h3>{experience.title}</h3>
-            <p>{experience.meta}</p>
           </div>
-          <span class="badge">{experience.score}</span>
+          <span class="badge">{experience.quality}</span>
         </article>
       {/each}
-    </div>
-    <div class="match-card">
-      <p class="eyebrow">ACTIVE OPPORTUNITY</p>
-      <h3>Junior Security Intern</h3>
-      <div class="match-line"><span>Current fit</span><strong>LONG SHOT</strong></div>
-      <p>Your typo fix proves you can technically use Git.</p>
     </div>
   {/if}
 </aside>

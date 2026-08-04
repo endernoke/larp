@@ -1,4 +1,5 @@
 import { emittedFacts, worldEffects, worldEvents } from './data/events';
+import { experienceDefinitions } from './data/experience';
 import { signalTemplates } from './data/signalTemplates';
 import type { GameState } from './GameState';
 import { type EmittedFact, sectorIds } from './WorldState';
@@ -17,6 +18,39 @@ function updateObjectAtPath(obj: any, path: string, updateFn: (value: any) => an
 
 export function advanceWeek(state: GameState): GameState {
   const newState = { ...state };
+
+  newState.player.work.forEach((experience) => {
+    if (experience.status === 'completed') return;
+    const definition = experienceDefinitions.find((def) => def.id === experience.definitionId);
+    if (!definition) return;
+
+    experience.status = 'in-progress';
+    experience.completedTimeUnits += experience.currentAllocatedTimeUnits;
+    experience.quality = Math.min(
+      100,
+      experience.quality +
+        (experience.currentAllocatedTimeUnits / experience.actualRequiredTime) *
+          (newState.player.wellBeing / 100),
+    );
+    if (
+      experience.deadlineWeeks &&
+      experience.startWeek + experience.deadlineWeeks >= newState.currentWeek - 1
+    ) {
+      experience.status = 'completed';
+    }
+  });
+  const totalWorkload = newState.player.work.reduce(
+    (sum, experience) => sum + experience.currentAllocatedTimeUnits,
+    0,
+  );
+  newState.player.wellBeing = Math.max(
+    20,
+    Math.min(120, newState.player.wellBeing + (1 - totalWorkload / 7) * 100),
+  );
+  newState.player.work.forEach((experience) => {
+    experience.currentAllocatedTimeUnits = 0;
+  });
+
   newState.world.activeEffects.forEach((effect) => {
     const effectDefinition = worldEffects.find((e) => e.id === effect.definitionId);
     if (!effectDefinition) return;
@@ -157,6 +191,11 @@ export function advanceWeek(state: GameState): GameState {
         });
       }
     });
+  });
+
+  newState.player.availableOpportunities = experienceDefinitions.filter((def) => {
+    const alreadyHave = newState.player.work.some((exp) => exp.definitionId === def.id);
+    return !alreadyHave;
   });
 
   return newState;

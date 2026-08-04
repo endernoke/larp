@@ -1,4 +1,5 @@
 import seedrandom from 'seedrandom';
+import { experienceDefinitions } from './data/experience';
 import type { PlayerState } from './PlayerState';
 import type { WorldState } from './WorldState';
 
@@ -16,16 +17,18 @@ export type GameAction =
       type: 'advance-week';
     }
   | {
-      type: 'clear-schedule';
+      type: 'clear-planner';
     }
   | {
-      type: 'add-to-schedule';
-      activityId: string;
+      type: 'add-to-planner';
+      experienceDefinitionId?: string;
+      experienceId?: string;
+      allocatedTimeUnits: number;
     };
 
 export type ActionOutcome =
   | {
-      type: 'schedule-updated';
+      type: 'work-updated';
     }
   | {
       type: 'week-advanced';
@@ -34,6 +37,10 @@ export type ActionOutcome =
   | {
       type: 'action-rejected';
       message?: string;
+    }
+  | {
+      type: 'reminder';
+      message: string;
     };
 
 export type GameUpdate = {
@@ -50,8 +57,8 @@ export function createInitialGameState(seed: string): GameState {
       wellBeing: 70,
       gpa: 3.1,
       visibility: 0,
-      experiences: [],
-      calendar: '',
+      work: [],
+      availableOpportunities: [...experienceDefinitions],
     },
     world: {
       sectors: {
