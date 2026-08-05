@@ -20,10 +20,10 @@ export type GameAction =
       type: 'clear-planner';
     }
   | {
-      type: 'add-to-planner';
-      experienceDefinitionId?: string;
-      experienceId?: string;
-      allocatedTimeUnits: number;
+      type: 'allocate-time';
+      targetType: 'work';
+      targetId: string;
+      timeUnits: number;
     };
 
 export type ActionOutcome =
@@ -58,12 +58,13 @@ export function createInitialGameState(seed: string): GameState {
       gpa: 3.1,
       visibility: 0,
       work: [],
-      tasks: [],
-      experiences: [],
       applications: [],
       engagements: [],
       notifications: [],
-      availableOpportunities: [...experienceDefinitions],
+      weeklyPlan: {
+        availableTimeUnits: 7,
+        timeAllocations: [],
+      },
     },
     world: {
       sectors: {

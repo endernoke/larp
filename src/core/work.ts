@@ -18,6 +18,7 @@ const allworkItemDefinitions = [] as WorkItemDefinition[];
 export function createWeeklyWorkItems(
   engagementDefinition: EngagementDefinition,
   weekIndex: number,
+  currentWeek: number,
 ): WorkItem[] {
   const newWorkItems: WorkItem[] = [];
   if (engagementDefinition.workItemDefinitionIds.length <= weekIndex) {
@@ -31,10 +32,26 @@ export function createWeeklyWorkItems(
       definitionId,
       spentTime: 0,
       quality: 0,
-      deadlineWeeks: workItemDefinition.deadlineWeeks,
+      deadlineWeek: currentWeek + workItemDefinition.deadlineWeeks,
     });
   });
   return newWorkItems;
+}
+
+export function evaluateApplications(gameState: GameState): GameState {
+  const newState = { ...gameState };
+  newState.player.applications.forEach((app) => {
+    const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
+    if (!opportunity) return;
+    // TODO: implement the actual scoring based on prerequisites, requirements, and world effects
+    const randomValue = newState.rng();
+    if (randomValue < 0.5) {
+      app.stage = 'accepted';
+    } else {
+      app.stage = 'rejected';
+    }
+  });
+  return newState;
 }
 
 export function handleApplicationResults(gameState: GameState): GameState {
@@ -46,7 +63,7 @@ export function handleApplicationResults(gameState: GameState): GameState {
       const engagementDefinition = allEngagementDefinitions.find((ed) => ed.id === opportunity.id);
       if (!engagementDefinition) return;
 
-      const newWorkItems = createWeeklyWorkItems(engagementDefinition, 0);
+      const newWorkItems = createWeeklyWorkItems(engagementDefinition, 0, newState.currentWeek);
       newState.player.work.push(...newWorkItems);
       const engagement: Engagement = {
         id: `engagement-${app.opportunityId}`,
@@ -101,7 +118,11 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
       return;
     }
     const nextWeekIndex = newState.currentWeek - engagement.startWeek + 1;
-    const nextWeekWorkItems = createWeeklyWorkItems(engagementDefinition, nextWeekIndex);
+    const nextWeekWorkItems = createWeeklyWorkItems(
+      engagementDefinition,
+      nextWeekIndex,
+      newState.currentWeek,
+    );
     engagement.currentWorkItemIds = nextWeekWorkItems.map((wi) => wi.id);
     newState.player.work.push(...nextWeekWorkItems);
   });
@@ -114,7 +135,9 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
 export function applyTimeAllocations(gameState: GameState): GameState {
   const newState = { ...gameState };
 
+  let totalWorkload = 0;
   newState.player.weeklyPlan.timeAllocations.forEach((allocation) => {
+    totalWorkload += allocation.timeUnits;
     if (allocation.activityType === 'work') {
       const workItem = newState.player.work.find((wi) => wi.id === allocation.targetId);
       const workItemDefinition = allworkItemDefinitions.find(
@@ -130,6 +153,16 @@ export function applyTimeAllocations(gameState: GameState): GameState {
       );
     }
   });
+
+  newState.player.wellBeing = Math.max(
+    20,
+    Math.min(120, newState.player.wellBeing + (1 - totalWorkload / 7) * 100),
+  );
+  newState.player.weeklyPlan.availableTimeUnits = Math.round(
+    Math.max(5, Math.min(9, newState.player.wellBeing / 10)),
+  );
+
+  newState.player.weeklyPlan.timeAllocations = [];
 
   return newState;
 }

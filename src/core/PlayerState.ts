@@ -45,9 +45,6 @@ export interface PlayerState {
   visibility: number;
 
   work: WorkItem[];
-  tasks: ExperienceEntry[];
-  experiences: ExperienceEntry[];
-  availableOpportunities: ExperienceEntryDefinition[];
   applications: Application[];
   engagements: Engagement[];
   notifications: Notification[];
