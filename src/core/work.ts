@@ -1,5 +1,6 @@
 import type { GameState } from './GameState';
 import type {
+  ActivityAllocation,
   Application,
   Effect,
   Engagement,
@@ -14,6 +15,28 @@ const allOpportunities = [] as Opportunity[];
 const allEngagementDefinitions = [] as EngagementDefinition[];
 const allworkItemDefinitions = [] as WorkItemDefinition[];
 
+export function createWeeklyWorkItems(
+  engagementDefinition: EngagementDefinition,
+  weekIndex: number,
+): WorkItem[] {
+  const newWorkItems: WorkItem[] = [];
+  if (engagementDefinition.workItemDefinitionIds.length <= weekIndex) {
+    return [];
+  }
+  engagementDefinition.workItemDefinitionIds[weekIndex].forEach((definitionId) => {
+    const workItemDefinition = allworkItemDefinitions.find((wid) => wid.id === definitionId);
+    if (!workItemDefinition) return;
+    newWorkItems.push({
+      id: `work-${definitionId}-${weekIndex}`,
+      definitionId,
+      spentTime: 0,
+      quality: 0,
+      deadlineWeeks: workItemDefinition.deadlineWeeks,
+    });
+  });
+  return newWorkItems;
+}
+
 export function handleApplicationResults(gameState: GameState): GameState {
   const newState = { ...gameState };
   newState.player.applications.forEach((app) => {
@@ -23,31 +46,14 @@ export function handleApplicationResults(gameState: GameState): GameState {
       const engagementDefinition = allEngagementDefinitions.find((ed) => ed.id === opportunity.id);
       if (!engagementDefinition) return;
 
-      const newWorkItemIds: string[] = [];
-      if (engagementDefinition.workItemDefinitionIds.length > 0) {
-        // First week
-        engagementDefinition.workItemDefinitionIds[0].forEach((definitionId) => {
-          const workItemDefinition = allworkItemDefinitions.find((wid) => wid.id === definitionId);
-          if (!workItemDefinition) return;
-          const workItemId: string = `work-${definitionId}-${newState.currentWeek}`;
-          const workItem: WorkItem = {
-            id: workItemId,
-            definitionId,
-            spentTime: 0,
-            quality: 0,
-            deadlineWeeks: workItemDefinition.deadlineWeeks,
-          };
-          newState.player.work.push(workItem);
-          newWorkItemIds.push(workItemId);
-        });
-      }
-
+      const newWorkItems = createWeeklyWorkItems(engagementDefinition, 0);
+      newState.player.work.push(...newWorkItems);
       const engagement: Engagement = {
         id: `engagement-${app.opportunityId}`,
         definitionId: engagementDefinition.id,
         performance: 0,
         startWeek: newState.currentWeek,
-        currentWorkItemIds: newWorkItemIds,
+        currentWorkItemIds: newWorkItems.map((wi) => wi.id),
       };
       newState.player.engagements.push(engagement);
       newState.player.notifications.push({
@@ -62,5 +68,68 @@ export function handleApplicationResults(gameState: GameState): GameState {
     }
   });
   newState.player.applications = [];
+  return newState;
+}
+
+export function processWeeklyEngagements(gameState: GameState): GameState {
+  const newState = { ...gameState };
+  // Currently assuming all engagement work items are one-week tasks
+  const laidOffEngagementIds: string[] = [];
+  newState.player.engagements.forEach((engagement) => {
+    const engagementDefinition = allEngagementDefinitions.find(
+      (ed) => ed.id === engagement.definitionId,
+    );
+    if (!engagementDefinition) return;
+
+    let averageQuality = 0;
+    engagement.currentWorkItemIds.forEach((workItemId) => {
+      const workItem = newState.player.work.find((wi) => wi.id === workItemId);
+      if (!workItem) return;
+      averageQuality += workItem.quality;
+    });
+    averageQuality /= engagement.currentWorkItemIds.length;
+    const prevWeeksWeighting = newState.currentWeek - engagement.startWeek + 1;
+    engagement.performance =
+      (engagement.performance * prevWeeksWeighting + averageQuality) / (prevWeeksWeighting + 1);
+    if (engagement.performance < 50) {
+      laidOffEngagementIds.push(engagement.id);
+      newState.player.notifications.push({
+        week: newState.currentWeek,
+        // FIXME
+        message: `You have been laid off from ${engagementDefinition.opportunityId} due to poor performance.`,
+      });
+      return;
+    }
+    const nextWeekIndex = newState.currentWeek - engagement.startWeek + 1;
+    const nextWeekWorkItems = createWeeklyWorkItems(engagementDefinition, nextWeekIndex);
+    engagement.currentWorkItemIds = nextWeekWorkItems.map((wi) => wi.id);
+    newState.player.work.push(...nextWeekWorkItems);
+  });
+  newState.player.engagements = newState.player.engagements.filter(
+    (engagement) => !laidOffEngagementIds.includes(engagement.id),
+  );
+  return newState;
+}
+
+export function applyTimeAllocations(gameState: GameState): GameState {
+  const newState = { ...gameState };
+
+  newState.player.weeklyPlan.timeAllocations.forEach((allocation) => {
+    if (allocation.activityType === 'work') {
+      const workItem = newState.player.work.find((wi) => wi.id === allocation.targetId);
+      const workItemDefinition = allworkItemDefinitions.find(
+        (wid) => wid.id === workItem?.definitionId,
+      );
+      if (!workItem || !workItemDefinition) return;
+      workItem.spentTime += allocation.timeUnits;
+      workItem.quality = Math.min(
+        100,
+        workItem.quality +
+          (allocation.timeUnits / workItemDefinition.requiredTime) *
+            (newState.player.wellBeing / 100),
+      );
+    }
+  });
+
   return newState;
 }

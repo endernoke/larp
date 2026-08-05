@@ -10,12 +10,13 @@ export interface WorkItem {
   definitionId: string;
   spentTime: number;
   quality: number;
-  deadlineWeeks?: number;
+  deadlineWeek?: number;
 }
 
-export interface ActivityAllocation {
-  activityType: string;
+export interface TimeAllocation {
+  activityType: 'work';
   targetId: string;
+  timeUnits: number;
   executionMode: 'deferred' | 'immediate';
 }
 
