@@ -58,6 +58,11 @@ export function createInitialGameState(seed: string): GameState {
       gpa: 3.1,
       visibility: 0,
       work: [],
+      tasks: [],
+      experiences: [],
+      applications: [],
+      engagements: [],
+      notifications: [],
       availableOpportunities: [...experienceDefinitions],
     },
     world: {
