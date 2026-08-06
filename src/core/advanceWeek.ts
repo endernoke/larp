@@ -23,10 +23,10 @@ function updateObjectAtPath(obj: any, path: string, updateFn: (value: any) => an
 
 export function advanceWeek(state: GameState): GameState {
   const newState = { ...state };
-  evaluateApplications(newState);
-  handleApplicationResults(newState);
   applyTimeAllocations(newState);
   processWeeklyEngagements(newState);
+  evaluateApplications(newState);
+  handleApplicationResults(newState);
   newState.player.work = newState.player.work.filter(
     (workItem) =>
       workItem.deadlineWeek === undefined || workItem.deadlineWeek > newState.currentWeek,

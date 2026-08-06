@@ -5,6 +5,8 @@ export interface WorkItemDefinition {
   requiredTime: number;
 }
 
+export const allWorkItemDefinitions: WorkItemDefinition[] = [];
+
 export interface WorkItem {
   id: string;
   definitionId: string;
@@ -35,11 +37,13 @@ export interface Opportunity {
   pursuitMode: 'application' | 'registration';
   title: string;
   description: string;
+  applicationWorkItemDefinitionId: string;
 }
 
 export interface Application {
   opportunityId: string;
-  stage: 'submitted' | 'accepted' | 'rejected';
+  workItemId: string;
+  stage: 'pending' | 'submitted' | 'accepted' | 'rejected';
 }
 
 export interface EngagementDefinition {

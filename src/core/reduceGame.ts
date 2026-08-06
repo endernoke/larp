@@ -2,6 +2,7 @@ import { advanceWeek } from './advanceWeek';
 import { experienceDefinitions } from './data/experience';
 import type { GameAction, GameState, GameUpdate } from './GameState';
 import type { PlayerState } from './PlayerState';
+import { allWorkItemDefinitions, type WorkItemDefinition } from './types';
 
 export function checkOverload(
   player: PlayerState,
@@ -95,12 +96,105 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
               : []),
           ],
         };
+        // } else if (action.targetType === 'application') {
+        //   const overloadStatus = checkOverload(newState.player, action.timeUnits);
+        //   if (overloadStatus === 'overload-error') {
+        //     return {
+        //       state,
+        //       outcomes: [
+        //         {
+        //           type: 'action-rejected',
+        //           message:
+        //             'You cannot handle the requested workload. Consider improving your well-being or reducing your commitments.',
+        //         },
+        //       ],
+        //     };
+        //   }
       } else {
         return {
           state,
           outcomes: [{ type: 'action-rejected', message: 'Unknown target type for allocation' }],
         };
       }
+    }
+
+    case 'apply-for-opportunity': {
+      const newState = { ...state };
+      const opportunity = newState.player.opportunities.find(
+        (opp) => opp.id === action.opportunityId,
+      );
+      if (!opportunity) {
+        return {
+          state,
+          outcomes: [{ type: 'action-rejected', message: 'Opportunity not found' }],
+        };
+      }
+      const existingApplication = newState.player.applications.find(
+        (app) => app.opportunityId === action.opportunityId,
+      );
+      if (existingApplication) {
+        return {
+          state,
+          outcomes: [{ type: 'action-rejected', message: 'Already applied for this opportunity' }],
+        };
+      }
+      const workItemDefinition = allWorkItemDefinitions.find(
+        (def) => def.id === opportunity.applicationWorkItemDefinitionId,
+      );
+      if (!workItemDefinition) {
+        return {
+          state,
+          outcomes: [
+            {
+              type: 'action-rejected',
+              message: 'Work item definition for application not found',
+            },
+          ],
+        };
+      }
+      const workItemId = `application-${opportunity.id}-${newState.currentWeek}`;
+      newState.player.work.push({
+        id: workItemId,
+        definitionId: workItemDefinition.id,
+        spentTime: 0,
+        quality: 0,
+        deadlineWeek: workItemDefinition.deadlineWeeks
+          ? newState.currentWeek + workItemDefinition.deadlineWeeks
+          : undefined,
+      });
+      newState.player.applications.push({
+        opportunityId: action.opportunityId,
+        stage: 'pending',
+        workItemId: workItemId,
+      });
+      return {
+        state: newState,
+        outcomes: [{ type: 'work-updated' }],
+      };
+    }
+
+    case 'submit-application': {
+      const newState = { ...state };
+      const application = newState.player.applications.find(
+        (app) => app.opportunityId === action.opportunityId,
+      );
+      if (!application) {
+        return {
+          state,
+          outcomes: [{ type: 'action-rejected', message: 'Application not found' }],
+        };
+      }
+      if (application.stage !== 'pending') {
+        return {
+          state,
+          outcomes: [{ type: 'action-rejected', message: 'Application already submitted' }],
+        };
+      }
+      application.stage = 'submitted';
+      return {
+        state: newState,
+        outcomes: [{ type: 'work-updated' }],
+      };
     }
 
     default:

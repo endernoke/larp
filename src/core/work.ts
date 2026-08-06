@@ -43,13 +43,15 @@ export function evaluateApplications(gameState: GameState): GameState {
   newState.player.applications.forEach((app) => {
     const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
     if (!opportunity) return;
-    // TODO: implement the actual scoring based on prerequisites, requirements, and world effects
-    const randomValue = newState.rng();
-    if (randomValue < 0.5) {
+    if (app.stage !== 'submitted') return;
+    const workItem = newState.player.work.find((wi) => wi.id === app.workItemId);
+    if (!workItem) return;
+    if (workItem.quality >= 70) {
       app.stage = 'accepted';
     } else {
       app.stage = 'rejected';
     }
+    newState.player.work = newState.player.work.filter((wi) => wi.id !== app.workItemId);
   });
   return newState;
 }
@@ -84,7 +86,9 @@ export function handleApplicationResults(gameState: GameState): GameState {
       });
     }
   });
-  newState.player.applications = [];
+  newState.player.applications = newState.player.applications.filter(
+    (app) => app.stage === 'pending',
+  );
   return newState;
 }
 

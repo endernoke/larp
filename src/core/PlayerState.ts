@@ -1,4 +1,11 @@
-import type { Application, Engagement, Notification, TimeAllocation, WorkItem } from './types';
+import type {
+  Application,
+  Engagement,
+  Notification,
+  Opportunity,
+  TimeAllocation,
+  WorkItem,
+} from './types';
 
 export const experienceTypes = [
   'internship',
@@ -45,6 +52,7 @@ export interface PlayerState {
   visibility: number;
 
   work: WorkItem[];
+  opportunities: Opportunity[];
   applications: Application[];
   engagements: Engagement[];
   notifications: Notification[];

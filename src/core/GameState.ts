@@ -21,9 +21,17 @@ export type GameAction =
     }
   | {
       type: 'allocate-time';
-      targetType: 'work';
+      targetType: 'work' | 'application';
       targetId: string;
       timeUnits: number;
+    }
+  | {
+      type: 'apply-for-opportunity';
+      opportunityId: string;
+    }
+  | {
+      type: 'submit-application';
+      opportunityId: string;
     };
 
 export type ActionOutcome =
