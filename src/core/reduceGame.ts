@@ -1,8 +1,9 @@
 import { advanceWeek } from './advanceWeek';
 import { experienceDefinitions } from './data/experience';
+import { allOpportunities, allWorkItemDefinitions } from './data/stubs';
 import type { GameAction, GameState, GameUpdate } from './GameState';
 import type { PlayerState } from './PlayerState';
-import { allWorkItemDefinitions, type WorkItemDefinition } from './types';
+import type { WorkItemDefinition } from './types';
 
 export function checkOverload(
   player: PlayerState,
@@ -138,7 +139,11 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
           outcomes: [{ type: 'action-rejected', message: 'Already applied for this opportunity' }],
         };
       }
-      if (['job', 'internship', 'graduate-school'].includes(opportunity.kind)) {
+      if (
+        opportunity.kind === 'job' ||
+        opportunity.kind === 'internship' ||
+        opportunity.kind === 'graduate-school'
+      ) {
         const workItemDefinition = allWorkItemDefinitions.find(
           (def) => def.id === opportunity.applicationWorkItemDefinitionId,
         );

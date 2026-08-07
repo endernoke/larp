@@ -71,6 +71,7 @@ export function createInitialGameState(seed: string): GameState {
       visibility: 0,
       work: [],
       opportunities: [],
+      projectIds: [],
       applications: [],
       engagements: [],
       notifications: [],

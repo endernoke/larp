@@ -1,3 +1,4 @@
+import { allEngagementDefinitions, allOpportunities, allWorkItemDefinitions } from './data/stubs';
 import type { GameState } from './GameState';
 import type {
   ActivityAllocation,
@@ -12,10 +13,6 @@ import type {
   WorkItem,
   WorkItemDefinition,
 } from './types';
-
-const allOpportunities = [] as Opportunity[];
-const allEngagementDefinitions = [] as EngagementDefinition[];
-const allworkItemDefinitions = [] as WorkItemDefinition[];
 
 export function createWeeklyWorkItems(
   engagementDefinition: EngagementDefinition,

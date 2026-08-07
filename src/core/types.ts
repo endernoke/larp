@@ -5,8 +5,6 @@ export interface WorkItemDefinition {
   requiredTime: number;
 }
 
-export const allWorkItemDefinitions: WorkItemDefinition[] = [];
-
 export interface WorkItem {
   id: string;
   definitionId: string;
