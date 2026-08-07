@@ -5,6 +5,7 @@ import { allOpportunities, allWorkItemDefinitions } from './data/stubs';
 import type { GameAction, GameState, GameUpdate } from './GameState';
 import type { PlayerState } from './PlayerState';
 import type { WorkItemDefinition } from './types';
+import { checkOpportunityEligibility } from './work';
 
 export function checkOverload(
   player: PlayerState,
@@ -130,6 +131,18 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
         opportunity.kind === 'internship' ||
         opportunity.kind === 'graduate-school'
       ) {
+        const isEligible = checkOpportunityEligibility(state.player, opportunity);
+        if (!isEligible) {
+          return {
+            state,
+            outcomes: [
+              {
+                type: 'action-rejected',
+                message: 'You do not meet the eligibility criteria for this opportunity',
+              },
+            ],
+          };
+        }
         const workItemDefinition = allWorkItemDefinitions.find(
           (def) => def.id === opportunity.applicationWorkItemDefinitionId,
         );
