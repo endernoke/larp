@@ -142,7 +142,8 @@ export function handleApplicationResults(gameState: GameState): GameState {
 
 export function processWeeklyEngagements(gameState: GameState): GameState {
   return produce(gameState, (newState) => {
-    // Currently assuming all engagement work items are one-week tasks
+    // Currently assuming all engagement work items are one-week tasks,
+    // so they will be automatically removed from the player's work list later in advanceWeek()
     const terminatedEngagementIds: string[] = [];
     newState.player.engagements.forEach((engagement) => {
       const engagementDefinition = allEngagementDefinitions.find(
@@ -158,10 +159,16 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
         if (!workItem) return;
         averageQuality += workItem.quality;
       });
-      averageQuality /= engagement.currentWorkItemIds.length;
-      const prevWeeksWeighting = newState.currentWeek - engagement.startWeek + 1;
+      if (engagement.currentWorkItemIds.length === 0) {
+        // FIXME
+        averageQuality = 0.5;
+      } else {
+        averageQuality /= engagement.currentWorkItemIds.length;
+      }
+      const prevCompletedWorkWeeks = newState.currentWeek - engagement.startWeek;
       engagement.performance =
-        (engagement.performance * prevWeeksWeighting + averageQuality) / (prevWeeksWeighting + 1);
+        (engagement.performance * prevCompletedWorkWeeks + averageQuality) /
+        (prevCompletedWorkWeeks + 1);
       if (engagement.performance < 50) {
         terminatedEngagementIds.push(engagement.id);
         newState.player.notifications.push({
@@ -171,7 +178,7 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
         });
         return;
       }
-      const nextWeekIndex = newState.currentWeek - engagement.startWeek + 1;
+      const nextWeekIndex = prevCompletedWorkWeeks + 1;
       if (engagementDefinition.workItemDefinitionIds.length <= nextWeekIndex) {
         terminatedEngagementIds.push(engagement.id);
         const opportunity = allOpportunities.find(
