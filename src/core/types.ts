@@ -20,6 +20,9 @@ export interface TimeAllocation {
   executionMode: 'deferred' | 'immediate';
 }
 
+export type PostGradOption = 'graduate-school' | 'big-tech' | 'startup';
+export type GameEndingId = PostGradOption | 'unemployed' | 'homeless';
+
 export type OpportunityKind = 'job' | 'internship' | 'project' | 'coursework' | 'graduate-school';
 
 export const sectorIds = [
@@ -46,6 +49,7 @@ export type ProfessionalOpportunity = BaseOpportunity & {
   prerequisites: Requirement[];
   preferredSkills: string[];
   applicationWorkItemDefinitionId?: string;
+  acceptanceOutcome?: PostGradOption;
 };
 
 export type PersonalProjectOpportunity = BaseOpportunity & {

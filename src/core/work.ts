@@ -127,6 +127,12 @@ export function handleApplicationResults(gameState: GameState): GameState {
           week: newState.currentWeek,
           message: `Your application for ${opportunity.title} was accepted! Time to lock in..`,
         });
+        if (
+          (opportunity.kind === 'graduate-school' || opportunity.kind === 'job') &&
+          opportunity.acceptanceOutcome
+        ) {
+          newState.player.postGradOptions.push(opportunity.acceptanceOutcome);
+        }
       } else if (app.stage === 'rejected') {
         newState.player.notifications.push({
           week: newState.currentWeek,

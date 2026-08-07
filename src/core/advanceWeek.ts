@@ -182,5 +182,9 @@ export function advanceWeek(state: GameState): GameState {
         }
       });
     });
+
+    if (newState.currentWeek >= newState.maxWeeks) {
+      // Determine the ending based on the player's state
+    }
   });
 }

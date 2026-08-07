@@ -2,7 +2,7 @@ import { produce } from 'immer';
 import { advanceWeek } from './advanceWeek';
 import { experienceDefinitions } from './data/experience';
 import { allOpportunities, allWorkItemDefinitions } from './data/stubs';
-import type { GameAction, GameState, GameUpdate } from './GameState';
+import type { ActionOutcome, GameAction, GameState, GameUpdate } from './GameState';
 import type { PlayerState } from './PlayerState';
 import type { WorkItemDefinition } from './types';
 import { checkOpportunityEligibility } from './work';
@@ -30,16 +30,17 @@ export function checkOverload(
 export function reduceGame(state: GameState, action: GameAction): GameUpdate {
   switch (action.type) {
     case 'advance-week': {
-      if (state.currentWeek >= state.maxWeeks - 1) {
-        return {
-          state,
-          outcomes: [{ type: 'action-rejected', message: 'Cannot advance week beyond maxWeeks' }],
-        };
-      }
       const newState = advanceWeek(state);
+      const outcomes: ActionOutcome[] = [{ type: 'week-advanced', newWeek: newState.currentWeek }];
+      if (newState.endingId) {
+        outcomes.push({
+          type: 'game-ended',
+          endingId: newState.endingId,
+        });
+      }
       return {
         state: newState,
-        outcomes: [{ type: 'week-advanced', newWeek: newState.currentWeek }],
+        outcomes,
       };
     }
 

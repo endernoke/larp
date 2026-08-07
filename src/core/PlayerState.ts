@@ -4,20 +4,10 @@ import type {
   Experience,
   Notification,
   Opportunity,
+  PostGradOption,
   TimeAllocation,
   WorkItem,
 } from './types';
-
-export const experienceTypes = [
-  'internship',
-  'job',
-  'project',
-  'hackathon',
-  'coursework',
-  'research',
-  'misc',
-] as const;
-export type ExperienceType = (typeof experienceTypes)[number];
 
 export interface PlayerState {
   money: number;
@@ -36,4 +26,7 @@ export interface PlayerState {
     timeAllocations: TimeAllocation[];
   };
   experiences: Experience[];
+
+  postGradOptions: PostGradOption[];
+  selectedPostGradOption?: PostGradOption;
 }

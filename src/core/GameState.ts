@@ -1,6 +1,7 @@
 import seedrandom from 'seedrandom';
 import { experienceDefinitions } from './data/experience';
 import type { PlayerState } from './PlayerState';
+import type { GameEndingId } from './types';
 import type { WorldState } from './WorldState';
 
 export interface GameState {
@@ -8,6 +9,7 @@ export interface GameState {
   maxWeeks: number;
   player: PlayerState;
   world: WorldState;
+  endingId?: GameEndingId;
   seed: string;
   // TODO: currently the rng makes the GameState not entirely immutable
   rng: seedrandom.StatefulPRNG<seedrandom.State.Arc4>;
@@ -54,6 +56,10 @@ export type ActionOutcome =
   | {
       type: 'reminder';
       message: string;
+    }
+  | {
+      type: 'game-ended';
+      endingId: GameEndingId;
     };
 
 export type GameUpdate = {
