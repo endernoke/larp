@@ -1,7 +1,6 @@
 import { allEngagementDefinitions, allOpportunities, allWorkItemDefinitions } from './data/stubs';
 import type { GameState } from './GameState';
 import type {
-  ActivityAllocation,
   Application,
   Effect,
   Engagement,
@@ -10,6 +9,7 @@ import type {
   Opportunity,
   ProfessionalOpportunity,
   Requirement,
+  TimeAllocation,
   WorkItem,
   WorkItemDefinition,
 } from './types';
@@ -24,7 +24,7 @@ export function createWeeklyWorkItems(
     return [];
   }
   engagementDefinition.workItemDefinitionIds[weekIndex].forEach((definitionId) => {
-    const workItemDefinition = allworkItemDefinitions.find((wid) => wid.id === definitionId);
+    const workItemDefinition = allWorkItemDefinitions.find((wid) => wid.id === definitionId);
     if (!workItemDefinition) return;
     newWorkItems.push({
       id: `work-${definitionId}-${weekIndex}`,
@@ -144,6 +144,8 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
     );
     if (!engagementDefinition) return;
 
+    newState.player.money += engagementDefinition.weeklyCompensation;
+
     let averageQuality = 0;
     engagement.currentWorkItemIds.forEach((workItemId) => {
       const workItem = newState.player.work.find((wi) => wi.id === workItemId);
@@ -206,7 +208,7 @@ export function applyTimeAllocations(gameState: GameState): GameState {
     totalWorkload += allocation.timeUnits;
     if (allocation.activityType === 'work') {
       const workItem = newState.player.work.find((wi) => wi.id === allocation.targetId);
-      const workItemDefinition = allworkItemDefinitions.find(
+      const workItemDefinition = allWorkItemDefinitions.find(
         (wid) => wid.id === workItem?.definitionId,
       );
       if (!workItem || !workItemDefinition) return;

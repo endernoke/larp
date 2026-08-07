@@ -48,6 +48,9 @@ export function advanceWeek(state: GameState): GameState {
 
   newState.world.signals = [];
 
+  // Living expenses I guess
+  newState.player.money -= 500;
+
   newState.currentWeek += 1;
 
   newState.world.activeEffects = newState.world.activeEffects.filter((effect) => {

@@ -65,7 +65,7 @@ export interface EngagementDefinition {
   id: string;
   opportunityId: string;
   organizationId: string;
-  compensation: string;
+  weeklyCompensation: number;
   durationWeeks?: number;
   workItemDefinitionIds: string[][];
 }
