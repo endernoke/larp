@@ -177,7 +177,7 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
           state: newState,
           outcomes: [{ type: 'work-updated' }],
         };
-      } else if (opportunity.kind === 'project') {
+      } else if (opportunity.kind === 'project' || opportunity.kind === 'coursework') {
         // Projects don't need application
         const workItemDefinition = allWorkItemDefinitions.find(
           (def) => def.id === opportunity.workItemDefinitionId,
@@ -242,35 +242,67 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
     case 'finish-project': {
       const newState = { ...state };
       const projectDefinition = allOpportunities.find((opp) => opp.id === action.projectId);
-      if (projectDefinition?.kind !== 'project') {
+      if (!projectDefinition) {
         return {
           state,
           outcomes: [{ type: 'action-rejected', message: 'Project not found' }],
         };
       }
-      const workItem = newState.player.work.find(
-        (wi) => wi.definitionId === projectDefinition.workItemDefinitionId,
-      );
-      if (!workItem) {
+      if (projectDefinition.kind === 'project') {
+        const workItem = newState.player.work.find(
+          (wi) => wi.definitionId === projectDefinition.workItemDefinitionId,
+        );
+        if (!workItem) {
+          return {
+            state,
+            outcomes: [{ type: 'action-rejected', message: 'Work item for project not found' }],
+          };
+        }
+        newState.player.experiences.push({
+          type: 'project',
+          title: projectDefinition.title,
+          quality: workItem.quality,
+          tags: projectDefinition.tags,
+        });
+        newState.player.projectIds = newState.player.projectIds.filter(
+          (id) => id !== action.projectId,
+        );
+        newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
+        return {
+          state: newState,
+          outcomes: [{ type: 'work-updated' }],
+        };
+      } else if (projectDefinition.kind === 'coursework') {
+        const workItem = newState.player.work.find(
+          (wi) => wi.definitionId === projectDefinition.workItemDefinitionId,
+        );
+        if (!workItem) {
+          return {
+            state,
+            outcomes: [{ type: 'action-rejected', message: 'Work item for coursework not found' }],
+          };
+        }
+        newState.player.experiences.push({
+          type: 'coursework',
+          title: projectDefinition.title,
+          quality: workItem.quality,
+          tags: projectDefinition.tags,
+        });
+        newState.player.gpa = Math.min(4.0, newState.player.gpa + (workItem.quality / 100) * 0.5);
+        newState.player.projectIds = newState.player.projectIds.filter(
+          (id) => id !== action.projectId,
+        );
+        newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
+        return {
+          state: newState,
+          outcomes: [{ type: 'work-updated' }],
+        };
+      } else {
         return {
           state,
-          outcomes: [{ type: 'action-rejected', message: 'Work item for project not found' }],
+          outcomes: [{ type: 'action-rejected', message: 'Unknown project kind' }],
         };
       }
-      newState.player.experiences.push({
-        type: 'project',
-        title: projectDefinition.title,
-        quality: workItem.quality,
-        tags: projectDefinition.tags,
-      });
-      newState.player.projectIds = newState.player.projectIds.filter(
-        (id) => id !== action.projectId,
-      );
-      newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
-      return {
-        state: newState,
-        outcomes: [{ type: 'work-updated' }],
-      };
     }
 
     default:

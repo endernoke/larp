@@ -20,7 +20,7 @@ export interface TimeAllocation {
   executionMode: 'deferred' | 'immediate';
 }
 
-export type OpportunityKind = 'job' | 'internship' | 'project' | 'graduate-school';
+export type OpportunityKind = 'job' | 'internship' | 'project' | 'coursework' | 'graduate-school';
 
 export const sectorIds = [
   'web',
@@ -48,12 +48,20 @@ export type ProfessionalOpportunity = BaseOpportunity & {
   applicationWorkItemDefinitionId?: string;
 };
 
-export type ProjectOpportunity = BaseOpportunity & {
+export type PersonalProjectOpportunity = BaseOpportunity & {
   kind: 'project';
   workItemDefinitionId: string;
 };
 
-export type Opportunity = ProfessionalOpportunity | ProjectOpportunity;
+export type CourseworkOpportunity = BaseOpportunity & {
+  kind: 'coursework';
+  workItemDefinitionId: string;
+};
+
+export type Opportunity =
+  | ProfessionalOpportunity
+  | PersonalProjectOpportunity
+  | CourseworkOpportunity;
 
 export interface Application {
   opportunityId: string;

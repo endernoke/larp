@@ -2,11 +2,13 @@ import { allEngagementDefinitions, allOpportunities, allWorkItemDefinitions } fr
 import type { GameState } from './GameState';
 import type {
   Application,
+  CourseworkOpportunity,
   Effect,
   Engagement,
   EngagementDefinition,
   Experience,
   Opportunity,
+  PersonalProjectOpportunity,
   ProfessionalOpportunity,
   Requirement,
   TimeAllocation,

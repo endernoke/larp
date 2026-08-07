@@ -50,6 +50,8 @@ export function advanceWeek(state: GameState): GameState {
 
   // Living expenses I guess
   newState.player.money -= 500;
+  // Grade decay for not doing coursework
+  newState.player.gpa -= 0.2;
 
   newState.currentWeek += 1;
 
