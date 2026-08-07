@@ -32,6 +32,10 @@ export type GameAction =
   | {
       type: 'submit-application';
       opportunityId: string;
+    }
+  | {
+      type: 'finish-project';
+      projectId: string;
     };
 
 export type ActionOutcome =

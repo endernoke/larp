@@ -29,6 +29,7 @@ export interface PlayerState {
   opportunities: Opportunity[];
   applications: Application[];
   engagements: Engagement[];
+  projectIds: string[];
   notifications: Notification[];
   weeklyPlan: {
     availableTimeUnits: number;

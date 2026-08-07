@@ -7,6 +7,7 @@ import type {
   EngagementDefinition,
   Experience,
   Opportunity,
+  ProfessionalOpportunity,
   Requirement,
   WorkItem,
   WorkItemDefinition,
@@ -43,7 +44,7 @@ export function createWeeklyWorkItems(
 
 export function checkOpportunityEligibility(
   player: GameState['player'],
-  opportunity: Opportunity,
+  opportunity: ProfessionalOpportunity,
 ): boolean {
   return opportunity.prerequisites.every((requirement) => {
     switch (requirement.type) {
@@ -63,6 +64,12 @@ export function evaluateApplications(gameState: GameState): GameState {
   newState.player.applications.forEach((app) => {
     const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
     if (!opportunity) return;
+    if (
+      opportunity.kind !== 'job' &&
+      opportunity.kind !== 'internship' &&
+      opportunity.kind !== 'graduate-school'
+    )
+      return;
     if (app.stage !== 'submitted') return;
     if (!checkOpportunityEligibility(newState.player, opportunity)) {
       app.stage = 'rejected';

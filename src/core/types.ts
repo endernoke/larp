@@ -22,26 +22,29 @@ export interface TimeAllocation {
   executionMode: 'deferred' | 'immediate';
 }
 
-export type OpportunityKind =
-  | 'job'
-  | 'internship'
-  | 'scholarship'
-  | 'hackathon'
-  | 'conference'
-  | 'research'
-  | 'graduate-school';
+export type OpportunityKind = 'job' | 'internship' | 'project' | 'graduate-school';
 
-export interface Opportunity {
+export interface BaseOpportunity {
   id: string;
   kind: OpportunityKind;
-  pursuitMode: 'application' | 'registration';
   title: string;
   description: string;
+  tags: string[];
+}
+
+export type ProfessionalOpportunity = BaseOpportunity & {
+  kind: 'job' | 'internship' | 'graduate-school';
   prerequisites: Requirement[];
   preferredSkills: string[];
-  tags: string[];
-  applicationWorkItemDefinitionId: string;
-}
+  applicationWorkItemDefinitionId?: string;
+};
+
+export type ProjectOpportunity = BaseOpportunity & {
+  kind: 'project';
+  workItemDefinitionId: string;
+};
+
+export type Opportunity = ProfessionalOpportunity | ProjectOpportunity;
 
 export interface Application {
   opportunityId: string;
