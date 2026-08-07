@@ -215,12 +215,11 @@ export function applyTimeAllocations(gameState: GameState): GameState {
       );
       if (!workItem || !workItemDefinition) return;
       workItem.spentTime += allocation.timeUnits;
-      workItem.quality = Math.min(
-        100,
-        workItem.quality +
-          (allocation.timeUnits / workItemDefinition.requiredTime) *
-            (newState.player.wellBeing / 100),
-      );
+      const qualityGain =
+        (allocation.timeUnits / workItemDefinition.requiredTime) *
+        (newState.player.wellBeing / 100) *
+        100;
+      workItem.quality = Math.min(100, workItem.quality + qualityGain);
     }
   });
 
