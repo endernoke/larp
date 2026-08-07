@@ -14,12 +14,12 @@ export function checkOverload(
       .filter((allocation) => allocation.executionMode === 'deferred')
       .reduce((sum, allocation) => sum + allocation.timeUnits, 0) + requestedTimeUnits;
 
-  const maxTimeUnits =
-    Math.max(5, Math.min(9, player.wellBeing / 10)) - player.weeklyPlan.availableTimeUnits;
+  const maxTimeUnits = 9;
+  const comfortableTimeUnits = 7;
   if (totalAllocatedTimeUnits > maxTimeUnits) {
     return 'overload-error';
   }
-  if (totalAllocatedTimeUnits > 7) {
+  if (totalAllocatedTimeUnits > comfortableTimeUnits) {
     return 'overload-warning';
   }
   return 'ok';
