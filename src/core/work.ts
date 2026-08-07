@@ -5,6 +5,7 @@ import type {
   Effect,
   Engagement,
   EngagementDefinition,
+  Experience,
   Opportunity,
   Requirement,
   WorkItem,
@@ -32,10 +33,29 @@ export function createWeeklyWorkItems(
       definitionId,
       spentTime: 0,
       quality: 0,
-      deadlineWeek: currentWeek + workItemDefinition.deadlineWeeks,
+      deadlineWeek: workItemDefinition.deadlineWeeks
+        ? currentWeek + workItemDefinition.deadlineWeeks
+        : undefined,
     });
   });
   return newWorkItems;
+}
+
+export function checkOpportunityEligibility(
+  player: GameState['player'],
+  opportunity: Opportunity,
+): boolean {
+  return opportunity.prerequisites.every((requirement) => {
+    switch (requirement.type) {
+      case 'gpa':
+        return player.gpa >= requirement.minValue;
+      case 'student-status':
+        // TODO
+        return true;
+      default:
+        return false;
+    }
+  });
 }
 
 export function evaluateApplications(gameState: GameState): GameState {
@@ -44,9 +64,25 @@ export function evaluateApplications(gameState: GameState): GameState {
     const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
     if (!opportunity) return;
     if (app.stage !== 'submitted') return;
+    if (!checkOpportunityEligibility(newState.player, opportunity)) {
+      app.stage = 'rejected';
+      newState.player.work = newState.player.work.filter((wi) => wi.id !== app.workItemId);
+      return;
+    }
     const workItem = newState.player.work.find((wi) => wi.id === app.workItemId);
     if (!workItem) return;
-    if (workItem.quality >= 70) {
+    const relevanceScore =
+      opportunity.preferredSkills.reduce((score, skill) => {
+        for (const experience of newState.player.experiences) {
+          if (experience.tags.includes(skill)) {
+            score += experience.quality * 0.01;
+            return score;
+          }
+        }
+        return score;
+      }, 0) / opportunity.preferredSkills.length;
+    const overallScore = (workItem.quality * 0.7 + relevanceScore * 100 * 0.3) / 100;
+    if (newState.rng() < overallScore) {
       app.stage = 'accepted';
     } else {
       app.stage = 'rejected';
@@ -95,7 +131,7 @@ export function handleApplicationResults(gameState: GameState): GameState {
 export function processWeeklyEngagements(gameState: GameState): GameState {
   const newState = { ...gameState };
   // Currently assuming all engagement work items are one-week tasks
-  const laidOffEngagementIds: string[] = [];
+  const terminatedEngagementIds: string[] = [];
   newState.player.engagements.forEach((engagement) => {
     const engagementDefinition = allEngagementDefinitions.find(
       (ed) => ed.id === engagement.definitionId,
@@ -113,7 +149,7 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
     engagement.performance =
       (engagement.performance * prevWeeksWeighting + averageQuality) / (prevWeeksWeighting + 1);
     if (engagement.performance < 50) {
-      laidOffEngagementIds.push(engagement.id);
+      terminatedEngagementIds.push(engagement.id);
       newState.player.notifications.push({
         week: newState.currentWeek,
         // FIXME
@@ -122,6 +158,26 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
       return;
     }
     const nextWeekIndex = newState.currentWeek - engagement.startWeek + 1;
+    if (engagementDefinition.workItemDefinitionIds.length <= nextWeekIndex) {
+      terminatedEngagementIds.push(engagement.id);
+      const opportunity = allOpportunities.find((o) => o.id === engagementDefinition.opportunityId);
+      if (opportunity) {
+        newState.player.experiences.push({
+          type:
+            opportunity.kind === 'job' || opportunity.kind === 'internship'
+              ? opportunity.kind
+              : 'project',
+          title: opportunity.title,
+          quality: engagement.performance,
+          tags: opportunity.tags,
+        });
+      }
+      newState.player.notifications.push({
+        week: newState.currentWeek,
+        message: `Your engagement with ${engagementDefinition.opportunityId} has ended.`,
+      });
+      return;
+    }
     const nextWeekWorkItems = createWeeklyWorkItems(
       engagementDefinition,
       nextWeekIndex,
@@ -131,7 +187,7 @@ export function processWeeklyEngagements(gameState: GameState): GameState {
     newState.player.work.push(...nextWeekWorkItems);
   });
   newState.player.engagements = newState.player.engagements.filter(
-    (engagement) => !laidOffEngagementIds.includes(engagement.id),
+    (engagement) => !terminatedEngagementIds.includes(engagement.id),
   );
   return newState;
 }

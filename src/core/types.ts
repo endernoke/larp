@@ -37,6 +37,9 @@ export interface Opportunity {
   pursuitMode: 'application' | 'registration';
   title: string;
   description: string;
+  prerequisites: Requirement[];
+  preferredSkills: string[];
+  tags: string[];
   applicationWorkItemDefinitionId: string;
 }
 
@@ -63,10 +66,25 @@ export interface Engagement {
   currentWorkItemIds: string[];
 }
 
-export type Requirement = string;
+export type Requirement =
+  | {
+      type: 'gpa';
+      minValue: number;
+    }
+  | {
+      type: 'student-status';
+    };
+
 export type Effect = string;
 
 export interface Notification {
   week: number;
   message: string;
+}
+
+export interface Experience {
+  type: 'internship' | 'job' | 'coursework' | 'project';
+  title: string;
+  quality: number;
+  tags: string[];
 }
