@@ -85,7 +85,9 @@ export function evaluateApplications(gameState: GameState): GameState {
         }
         return score;
       }, 0) / opportunity.preferredSkills.length;
-    const overallScore = (workItem.quality * 0.7 + relevanceScore * 100 * 0.3) / 100;
+    const sectorStateScore = (newState.world.sectors[opportunity.sector]?.demand ?? 0) * 0.01;
+    const overallScore =
+      (workItem.quality * 0.25 + relevanceScore * 100 * 0.25 + sectorStateScore * 100 * 0.5) / 100;
     if (newState.rng() < overallScore) {
       app.stage = 'accepted';
     } else {

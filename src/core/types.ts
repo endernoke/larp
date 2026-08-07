@@ -22,6 +22,16 @@ export interface TimeAllocation {
 
 export type OpportunityKind = 'job' | 'internship' | 'project' | 'graduate-school';
 
+export const sectorIds = [
+  'web',
+  'ai',
+  'cybersecurity',
+  'infrastructure',
+  'game-dev',
+  'research',
+] as const;
+export type SectorId = (typeof sectorIds)[number];
+
 export interface BaseOpportunity {
   id: string;
   kind: OpportunityKind;
@@ -32,6 +42,7 @@ export interface BaseOpportunity {
 
 export type ProfessionalOpportunity = BaseOpportunity & {
   kind: 'job' | 'internship' | 'graduate-school';
+  sector: SectorId;
   prerequisites: Requirement[];
   preferredSkills: string[];
   applicationWorkItemDefinitionId?: string;

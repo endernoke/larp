@@ -1,7 +1,8 @@
 import { emittedFacts, worldEffects, worldEvents } from './data/events';
 import { signalTemplates } from './data/signalTemplates';
 import type { GameState } from './GameState';
-import { type EmittedFact, sectorIds } from './WorldState';
+import { sectorIds } from './types';
+import type { EmittedFact } from './WorldState';
 import {
   applyTimeAllocations,
   evaluateApplications,

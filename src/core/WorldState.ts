@@ -1,14 +1,5 @@
 import type { Signal } from './Signal';
-
-export const sectorIds = [
-  'web',
-  'ai',
-  'cybersecurity',
-  'infrastructure',
-  'game-dev',
-  'research',
-] as const;
-export type SectorId = (typeof sectorIds)[number];
+import type { SectorId } from './types';
 
 export interface BaseSectorState {
   demand: number;
