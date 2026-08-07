@@ -109,7 +109,7 @@ export function handleApplicationResults(gameState: GameState): GameState {
       if (!opportunity) return;
       if (app.stage === 'accepted') {
         const engagementDefinition = allEngagementDefinitions.find(
-          (ed) => ed.id === opportunity.id,
+          (ed) => ed.opportunityId === opportunity.id,
         );
         if (!engagementDefinition) return;
 
