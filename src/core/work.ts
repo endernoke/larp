@@ -1,3 +1,4 @@
+import { produce } from 'immer';
 import { allEngagementDefinitions, allOpportunities, allWorkItemDefinitions } from './data/stubs';
 import type { GameState } from './GameState';
 import type {
@@ -59,179 +60,182 @@ export function checkOpportunityEligibility(
 }
 
 export function evaluateApplications(gameState: GameState): GameState {
-  const newState = { ...gameState };
-  newState.player.applications.forEach((app) => {
-    const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
-    if (!opportunity) return;
-    if (
-      opportunity.kind !== 'job' &&
-      opportunity.kind !== 'internship' &&
-      opportunity.kind !== 'graduate-school'
-    )
-      return;
-    if (app.stage !== 'submitted') return;
-    if (!checkOpportunityEligibility(newState.player, opportunity)) {
-      app.stage = 'rejected';
-      newState.player.work = newState.player.work.filter((wi) => wi.id !== app.workItemId);
-      return;
-    }
-    const workItem = newState.player.work.find((wi) => wi.id === app.workItemId);
-    if (!workItem) return;
-    const relevanceScore =
-      opportunity.preferredSkills.reduce((score, skill) => {
-        for (const experience of newState.player.experiences) {
-          if (experience.tags.includes(skill)) {
-            score += experience.quality * 0.01;
-            return score;
+  return produce(gameState, (newState) => {
+    newState.player.applications.forEach((app) => {
+      const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
+      if (!opportunity) return;
+      if (
+        opportunity.kind !== 'job' &&
+        opportunity.kind !== 'internship' &&
+        opportunity.kind !== 'graduate-school'
+      )
+        return;
+      if (app.stage !== 'submitted') return;
+      if (!checkOpportunityEligibility(newState.player, opportunity)) {
+        app.stage = 'rejected';
+        newState.player.work = newState.player.work.filter((wi) => wi.id !== app.workItemId);
+        return;
+      }
+      const workItem = newState.player.work.find((wi) => wi.id === app.workItemId);
+      if (!workItem) return;
+      const relevanceScore =
+        opportunity.preferredSkills.reduce((score, skill) => {
+          for (const experience of newState.player.experiences) {
+            if (experience.tags.includes(skill)) {
+              score += experience.quality * 0.01;
+              return score;
+            }
           }
-        }
-        return score;
-      }, 0) / opportunity.preferredSkills.length;
-    const sectorStateScore = (newState.world.sectors[opportunity.sector]?.demand ?? 0) * 0.01;
-    const overallScore =
-      (workItem.quality * 0.25 + relevanceScore * 100 * 0.25 + sectorStateScore * 100 * 0.5) / 100;
-    if (newState.rng() < overallScore) {
-      app.stage = 'accepted';
-    } else {
-      app.stage = 'rejected';
-    }
-    newState.player.work = newState.player.work.filter((wi) => wi.id !== app.workItemId);
+          return score;
+        }, 0) / opportunity.preferredSkills.length;
+      const sectorStateScore = (newState.world.sectors[opportunity.sector]?.demand ?? 0) * 0.01;
+      const overallScore =
+        (workItem.quality * 0.25 + relevanceScore * 100 * 0.25 + sectorStateScore * 100 * 0.5) /
+        100;
+      if (newState.rng() < overallScore) {
+        app.stage = 'accepted';
+      } else {
+        app.stage = 'rejected';
+      }
+      newState.player.work = newState.player.work.filter((wi) => wi.id !== app.workItemId);
+    });
   });
-  return newState;
 }
 
 export function handleApplicationResults(gameState: GameState): GameState {
-  const newState = { ...gameState };
-  newState.player.applications.forEach((app) => {
-    const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
-    if (!opportunity) return;
-    if (app.stage === 'accepted') {
-      const engagementDefinition = allEngagementDefinitions.find((ed) => ed.id === opportunity.id);
-      if (!engagementDefinition) return;
+  return produce(gameState, (newState) => {
+    newState.player.applications.forEach((app) => {
+      const opportunity = allOpportunities.find((o) => o.id === app.opportunityId);
+      if (!opportunity) return;
+      if (app.stage === 'accepted') {
+        const engagementDefinition = allEngagementDefinitions.find(
+          (ed) => ed.id === opportunity.id,
+        );
+        if (!engagementDefinition) return;
 
-      const newWorkItems = createWeeklyWorkItems(engagementDefinition, 0, newState.currentWeek);
-      newState.player.work.push(...newWorkItems);
-      const engagement: Engagement = {
-        id: `engagement-${app.opportunityId}`,
-        definitionId: engagementDefinition.id,
-        performance: 0,
-        startWeek: newState.currentWeek,
-        currentWorkItemIds: newWorkItems.map((wi) => wi.id),
-      };
-      newState.player.engagements.push(engagement);
-      newState.player.notifications.push({
-        week: newState.currentWeek,
-        message: `Your application for ${opportunity.title} was accepted! Time to lock in..`,
-      });
-    } else if (app.stage === 'rejected') {
-      newState.player.notifications.push({
-        week: newState.currentWeek,
-        message: `Your application for ${opportunity.title} was rejected.`,
-      });
-    }
+        const newWorkItems = createWeeklyWorkItems(engagementDefinition, 0, newState.currentWeek);
+        newState.player.work.push(...newWorkItems);
+        const engagement: Engagement = {
+          id: `engagement-${app.opportunityId}`,
+          definitionId: engagementDefinition.id,
+          performance: 0,
+          startWeek: newState.currentWeek,
+          currentWorkItemIds: newWorkItems.map((wi) => wi.id),
+        };
+        newState.player.engagements.push(engagement);
+        newState.player.notifications.push({
+          week: newState.currentWeek,
+          message: `Your application for ${opportunity.title} was accepted! Time to lock in..`,
+        });
+      } else if (app.stage === 'rejected') {
+        newState.player.notifications.push({
+          week: newState.currentWeek,
+          message: `Your application for ${opportunity.title} was rejected.`,
+        });
+      }
+    });
+    newState.player.applications = newState.player.applications.filter(
+      (app) => app.stage === 'pending',
+    );
   });
-  newState.player.applications = newState.player.applications.filter(
-    (app) => app.stage === 'pending',
-  );
-  return newState;
 }
 
 export function processWeeklyEngagements(gameState: GameState): GameState {
-  const newState = { ...gameState };
-  // Currently assuming all engagement work items are one-week tasks
-  const terminatedEngagementIds: string[] = [];
-  newState.player.engagements.forEach((engagement) => {
-    const engagementDefinition = allEngagementDefinitions.find(
-      (ed) => ed.id === engagement.definitionId,
-    );
-    if (!engagementDefinition) return;
+  return produce(gameState, (newState) => {
+    // Currently assuming all engagement work items are one-week tasks
+    const terminatedEngagementIds: string[] = [];
+    newState.player.engagements.forEach((engagement) => {
+      const engagementDefinition = allEngagementDefinitions.find(
+        (ed) => ed.id === engagement.definitionId,
+      );
+      if (!engagementDefinition) return;
 
-    newState.player.money += engagementDefinition.weeklyCompensation;
+      newState.player.money += engagementDefinition.weeklyCompensation;
 
-    let averageQuality = 0;
-    engagement.currentWorkItemIds.forEach((workItemId) => {
-      const workItem = newState.player.work.find((wi) => wi.id === workItemId);
-      if (!workItem) return;
-      averageQuality += workItem.quality;
-    });
-    averageQuality /= engagement.currentWorkItemIds.length;
-    const prevWeeksWeighting = newState.currentWeek - engagement.startWeek + 1;
-    engagement.performance =
-      (engagement.performance * prevWeeksWeighting + averageQuality) / (prevWeeksWeighting + 1);
-    if (engagement.performance < 50) {
-      terminatedEngagementIds.push(engagement.id);
-      newState.player.notifications.push({
-        week: newState.currentWeek,
-        // FIXME
-        message: `You have been laid off from ${engagementDefinition.opportunityId} due to poor performance.`,
+      let averageQuality = 0;
+      engagement.currentWorkItemIds.forEach((workItemId) => {
+        const workItem = newState.player.work.find((wi) => wi.id === workItemId);
+        if (!workItem) return;
+        averageQuality += workItem.quality;
       });
-      return;
-    }
-    const nextWeekIndex = newState.currentWeek - engagement.startWeek + 1;
-    if (engagementDefinition.workItemDefinitionIds.length <= nextWeekIndex) {
-      terminatedEngagementIds.push(engagement.id);
-      const opportunity = allOpportunities.find((o) => o.id === engagementDefinition.opportunityId);
-      if (opportunity) {
-        newState.player.experiences.push({
-          type:
-            opportunity.kind === 'job' || opportunity.kind === 'internship'
-              ? opportunity.kind
-              : 'project',
-          title: opportunity.title,
-          quality: engagement.performance,
-          tags: opportunity.tags,
+      averageQuality /= engagement.currentWorkItemIds.length;
+      const prevWeeksWeighting = newState.currentWeek - engagement.startWeek + 1;
+      engagement.performance =
+        (engagement.performance * prevWeeksWeighting + averageQuality) / (prevWeeksWeighting + 1);
+      if (engagement.performance < 50) {
+        terminatedEngagementIds.push(engagement.id);
+        newState.player.notifications.push({
+          week: newState.currentWeek,
+          // FIXME
+          message: `You have been laid off from ${engagementDefinition.opportunityId} due to poor performance.`,
         });
+        return;
       }
-      newState.player.notifications.push({
-        week: newState.currentWeek,
-        message: `Your engagement with ${engagementDefinition.opportunityId} has ended.`,
-      });
-      return;
-    }
-    const nextWeekWorkItems = createWeeklyWorkItems(
-      engagementDefinition,
-      nextWeekIndex,
-      newState.currentWeek,
+      const nextWeekIndex = newState.currentWeek - engagement.startWeek + 1;
+      if (engagementDefinition.workItemDefinitionIds.length <= nextWeekIndex) {
+        terminatedEngagementIds.push(engagement.id);
+        const opportunity = allOpportunities.find(
+          (o) => o.id === engagementDefinition.opportunityId,
+        );
+        if (opportunity) {
+          newState.player.experiences.push({
+            type:
+              opportunity.kind === 'job' || opportunity.kind === 'internship'
+                ? opportunity.kind
+                : 'project',
+            title: opportunity.title,
+            quality: engagement.performance,
+            tags: opportunity.tags,
+          });
+        }
+        newState.player.notifications.push({
+          week: newState.currentWeek,
+          message: `Your engagement with ${engagementDefinition.opportunityId} has ended.`,
+        });
+        return;
+      }
+      const nextWeekWorkItems = createWeeklyWorkItems(
+        engagementDefinition,
+        nextWeekIndex,
+        newState.currentWeek,
+      );
+      engagement.currentWorkItemIds = nextWeekWorkItems.map((wi) => wi.id);
+      newState.player.work.push(...nextWeekWorkItems);
+    });
+    newState.player.engagements = newState.player.engagements.filter(
+      (engagement) => !terminatedEngagementIds.includes(engagement.id),
     );
-    engagement.currentWorkItemIds = nextWeekWorkItems.map((wi) => wi.id);
-    newState.player.work.push(...nextWeekWorkItems);
   });
-  newState.player.engagements = newState.player.engagements.filter(
-    (engagement) => !terminatedEngagementIds.includes(engagement.id),
-  );
-  return newState;
 }
 
 export function applyTimeAllocations(gameState: GameState): GameState {
-  const newState = { ...gameState };
+  return produce(gameState, (newState) => {
+    let totalWorkload = 0;
+    newState.player.weeklyPlan.timeAllocations.forEach((allocation) => {
+      totalWorkload += allocation.timeUnits;
+      if (allocation.activityType === 'work') {
+        const workItem = newState.player.work.find((wi) => wi.id === allocation.targetId);
+        const workItemDefinition = allWorkItemDefinitions.find(
+          (wid) => wid.id === workItem?.definitionId,
+        );
+        if (!workItem || !workItemDefinition) return;
+        workItem.spentTime += allocation.timeUnits;
+        const qualityGain =
+          (allocation.timeUnits / workItemDefinition.requiredTime) *
+          (newState.player.wellBeing / 100) *
+          100;
+        workItem.quality = Math.min(100, workItem.quality + qualityGain);
+      }
+    });
 
-  let totalWorkload = 0;
-  newState.player.weeklyPlan.timeAllocations.forEach((allocation) => {
-    totalWorkload += allocation.timeUnits;
-    if (allocation.activityType === 'work') {
-      const workItem = newState.player.work.find((wi) => wi.id === allocation.targetId);
-      const workItemDefinition = allWorkItemDefinitions.find(
-        (wid) => wid.id === workItem?.definitionId,
-      );
-      if (!workItem || !workItemDefinition) return;
-      workItem.spentTime += allocation.timeUnits;
-      const qualityGain =
-        (allocation.timeUnits / workItemDefinition.requiredTime) *
-        (newState.player.wellBeing / 100) *
-        100;
-      workItem.quality = Math.min(100, workItem.quality + qualityGain);
-    }
+    newState.player.wellBeing = Math.max(
+      20,
+      Math.min(120, newState.player.wellBeing + (1 - totalWorkload / 7) * 100),
+    );
+    newState.player.weeklyPlan.availableTimeUnits = Math.round(
+      Math.max(5, Math.min(9, newState.player.wellBeing / 10)),
+    );
+
+    newState.player.weeklyPlan.timeAllocations = [];
   });
-
-  newState.player.wellBeing = Math.max(
-    20,
-    Math.min(120, newState.player.wellBeing + (1 - totalWorkload / 7) * 100),
-  );
-  newState.player.weeklyPlan.availableTimeUnits = Math.round(
-    Math.max(5, Math.min(9, newState.player.wellBeing / 10)),
-  );
-
-  newState.player.weeklyPlan.timeAllocations = [];
-
-  return newState;
 }

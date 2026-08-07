@@ -9,6 +9,7 @@ export interface GameState {
   player: PlayerState;
   world: WorldState;
   seed: string;
+  // TODO: currently the rng makes the GameState not entirely immutable
   rng: seedrandom.StatefulPRNG<seedrandom.State.Arc4>;
 }
 

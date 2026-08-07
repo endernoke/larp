@@ -1,3 +1,4 @@
+import { produce } from 'immer';
 import { advanceWeek } from './advanceWeek';
 import { experienceDefinitions } from './data/experience';
 import { allOpportunities, allWorkItemDefinitions } from './data/stubs';
@@ -42,22 +43,22 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
     }
 
     case 'clear-planner': {
-      const newState = { ...state };
-      // Clear deferred time allocations only
-      newState.player.weeklyPlan.timeAllocations =
-        newState.player.weeklyPlan.timeAllocations.filter(
-          (allocation) => allocation.executionMode === 'immediate',
-        );
+      const nextState = produce(state, (newState) => {
+        // Clear deferred time allocations only
+        newState.player.weeklyPlan.timeAllocations =
+          newState.player.weeklyPlan.timeAllocations.filter(
+            (allocation) => allocation.executionMode === 'immediate',
+          );
+      });
       return {
-        state: newState,
+        state: nextState,
         outcomes: [{ type: 'work-updated' }],
       };
     }
 
     case 'allocate-time': {
-      const newState = { ...state };
       if (action.targetType === 'work') {
-        const overloadStatus = checkOverload(newState.player, action.timeUnits);
+        const overloadStatus = checkOverload(state.player, action.timeUnits);
         if (overloadStatus === 'overload-error') {
           return {
             state,
@@ -65,26 +66,28 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
               {
                 type: 'action-rejected',
                 message:
-                  'You cannot handle the requested workload. Consider improving your well-being or reducing your commitments.',
+                  'You cannot handle the requested workload. Consider reducing your commitments.',
               },
             ],
           };
         }
-        const workItem = newState.player.work.find((workItem) => workItem.id === action.targetId);
+        const workItem = state.player.work.find((workItem) => workItem.id === action.targetId);
         if (!workItem) {
           return {
             state,
             outcomes: [{ type: 'action-rejected', message: 'Work item not found' }],
           };
         }
-        newState.player.weeklyPlan.timeAllocations.push({
-          activityType: 'work',
-          targetId: workItem.id,
-          timeUnits: action.timeUnits,
-          executionMode: 'deferred',
+        const nextState = produce(state, (newState) => {
+          newState.player.weeklyPlan.timeAllocations.push({
+            activityType: 'work',
+            targetId: workItem.id,
+            timeUnits: action.timeUnits,
+            executionMode: 'deferred',
+          });
         });
         return {
-          state: newState,
+          state: nextState,
           outcomes: [
             { type: 'work-updated' },
             ...(overloadStatus === 'overload-warning'
@@ -97,20 +100,6 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
               : []),
           ],
         };
-        // } else if (action.targetType === 'application') {
-        //   const overloadStatus = checkOverload(newState.player, action.timeUnits);
-        //   if (overloadStatus === 'overload-error') {
-        //     return {
-        //       state,
-        //       outcomes: [
-        //         {
-        //           type: 'action-rejected',
-        //           message:
-        //             'You cannot handle the requested workload. Consider improving your well-being or reducing your commitments.',
-        //         },
-        //       ],
-        //     };
-        //   }
       } else {
         return {
           state,
@@ -120,17 +109,14 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
     }
 
     case 'apply-for-opportunity': {
-      const newState = { ...state };
-      const opportunity = newState.player.opportunities.find(
-        (opp) => opp.id === action.opportunityId,
-      );
+      const opportunity = state.player.opportunities.find((opp) => opp.id === action.opportunityId);
       if (!opportunity) {
         return {
           state,
           outcomes: [{ type: 'action-rejected', message: 'Opportunity not found' }],
         };
       }
-      const existingApplication = newState.player.applications.find(
+      const existingApplication = state.player.applications.find(
         (app) => app.opportunityId === action.opportunityId,
       );
       if (existingApplication) {
@@ -158,23 +144,25 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
             ],
           };
         }
-        const workItemId = `application-${opportunity.id}-${newState.currentWeek}`;
-        newState.player.work.push({
-          id: workItemId,
-          definitionId: workItemDefinition.id,
-          spentTime: 0,
-          quality: 0,
-          deadlineWeek: workItemDefinition.deadlineWeeks
-            ? newState.currentWeek + workItemDefinition.deadlineWeeks
-            : undefined,
-        });
-        newState.player.applications.push({
-          opportunityId: action.opportunityId,
-          stage: 'pending',
-          workItemId: workItemId,
+        const workItemId = `application-${opportunity.id}-${state.currentWeek}`;
+        const nextState = produce(state, (newState) => {
+          newState.player.work.push({
+            id: workItemId,
+            definitionId: workItemDefinition.id,
+            spentTime: 0,
+            quality: 0,
+            deadlineWeek: workItemDefinition.deadlineWeeks
+              ? newState.currentWeek + workItemDefinition.deadlineWeeks
+              : undefined,
+          });
+          newState.player.applications.push({
+            opportunityId: action.opportunityId,
+            stage: 'pending',
+            workItemId: workItemId,
+          });
         });
         return {
-          state: newState,
+          state: nextState,
           outcomes: [{ type: 'work-updated' }],
         };
       } else if (opportunity.kind === 'project' || opportunity.kind === 'coursework') {
@@ -193,18 +181,20 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
             ],
           };
         }
-        newState.player.projectIds.push(opportunity.id);
-        newState.player.work.push({
-          id: `project-${opportunity.id}-${newState.currentWeek}`,
-          definitionId: opportunity.workItemDefinitionId,
-          spentTime: 0,
-          quality: 0,
-          deadlineWeek: workItemDefinition.deadlineWeeks
-            ? newState.currentWeek + workItemDefinition.deadlineWeeks
-            : undefined,
+        const nextState = produce(state, (newState) => {
+          newState.player.projectIds.push(opportunity.id);
+          newState.player.work.push({
+            id: `project-${opportunity.id}-${newState.currentWeek}`,
+            definitionId: opportunity.workItemDefinitionId,
+            spentTime: 0,
+            quality: 0,
+            deadlineWeek: workItemDefinition.deadlineWeeks
+              ? newState.currentWeek + workItemDefinition.deadlineWeeks
+              : undefined,
+          });
         });
         return {
-          state: newState,
+          state: nextState,
           outcomes: [{ type: 'work-updated' }],
         };
       } else {
@@ -216,8 +206,7 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
     }
 
     case 'submit-application': {
-      const newState = { ...state };
-      const application = newState.player.applications.find(
+      const application = state.player.applications.find(
         (app) => app.opportunityId === action.opportunityId,
       );
       if (!application) {
@@ -232,15 +221,21 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
           outcomes: [{ type: 'action-rejected', message: 'Application already submitted' }],
         };
       }
-      application.stage = 'submitted';
+      const nextState = produce(state, (newState) => {
+        const app = newState.player.applications.find(
+          (app) => app.opportunityId === action.opportunityId,
+        );
+        if (app) {
+          app.stage = 'submitted';
+        }
+      });
       return {
-        state: newState,
+        state: nextState,
         outcomes: [{ type: 'work-updated' }],
       };
     }
 
     case 'finish-project': {
-      const newState = { ...state };
       const projectDefinition = allOpportunities.find((opp) => opp.id === action.projectId);
       if (!projectDefinition) {
         return {
@@ -249,7 +244,7 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
         };
       }
       if (projectDefinition.kind === 'project') {
-        const workItem = newState.player.work.find(
+        const workItem = state.player.work.find(
           (wi) => wi.definitionId === projectDefinition.workItemDefinitionId,
         );
         if (!workItem) {
@@ -258,22 +253,24 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
             outcomes: [{ type: 'action-rejected', message: 'Work item for project not found' }],
           };
         }
-        newState.player.experiences.push({
-          type: 'project',
-          title: projectDefinition.title,
-          quality: workItem.quality,
-          tags: projectDefinition.tags,
+        const nextState = produce(state, (newState) => {
+          newState.player.experiences.push({
+            type: 'project',
+            title: projectDefinition.title,
+            quality: workItem.quality,
+            tags: projectDefinition.tags,
+          });
+          newState.player.projectIds = newState.player.projectIds.filter(
+            (id) => id !== action.projectId,
+          );
+          newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
         });
-        newState.player.projectIds = newState.player.projectIds.filter(
-          (id) => id !== action.projectId,
-        );
-        newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
         return {
-          state: newState,
+          state: nextState,
           outcomes: [{ type: 'work-updated' }],
         };
       } else if (projectDefinition.kind === 'coursework') {
-        const workItem = newState.player.work.find(
+        const workItem = state.player.work.find(
           (wi) => wi.definitionId === projectDefinition.workItemDefinitionId,
         );
         if (!workItem) {
@@ -282,19 +279,21 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
             outcomes: [{ type: 'action-rejected', message: 'Work item for coursework not found' }],
           };
         }
-        newState.player.experiences.push({
-          type: 'coursework',
-          title: projectDefinition.title,
-          quality: workItem.quality,
-          tags: projectDefinition.tags,
+        const nextState = produce(state, (newState) => {
+          newState.player.experiences.push({
+            type: 'coursework',
+            title: projectDefinition.title,
+            quality: workItem.quality,
+            tags: projectDefinition.tags,
+          });
+          newState.player.gpa = Math.min(4.0, newState.player.gpa + (workItem.quality / 100) * 0.5);
+          newState.player.projectIds = newState.player.projectIds.filter(
+            (id) => id !== action.projectId,
+          );
+          newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
         });
-        newState.player.gpa = Math.min(4.0, newState.player.gpa + (workItem.quality / 100) * 0.5);
-        newState.player.projectIds = newState.player.projectIds.filter(
-          (id) => id !== action.projectId,
-        );
-        newState.player.work = newState.player.work.filter((wi) => wi.id !== workItem.id);
         return {
-          state: newState,
+          state: nextState,
           outcomes: [{ type: 'work-updated' }],
         };
       } else {
