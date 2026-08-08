@@ -28,15 +28,36 @@ export function checkOverload(
 }
 
 export function reduceGame(state: GameState, action: GameAction): GameUpdate {
+  if (state.endingId) {
+    return {
+      state,
+      outcomes: [{ type: 'action-rejected', message: 'Game has already ended' }],
+    };
+  }
+
   switch (action.type) {
     case 'advance-week': {
       const newState = advanceWeek(state);
       const outcomes: ActionOutcome[] = [{ type: 'week-advanced', newWeek: newState.currentWeek }];
-      if (newState.endingId) {
-        outcomes.push({
-          type: 'game-ended',
-          endingId: newState.endingId,
-        });
+      if (newState.currentWeek >= newState.maxWeeks) {
+        if (newState.player.postGradOptions.length > 1) {
+          outcomes.push({ type: 'pending-post-grad-option-selection' });
+        } else {
+          if (newState.player.postGradOptions.length === 1) {
+            newState.player.selectedPostGradOption = newState.player.postGradOptions[0];
+            newState.endingId = newState.player.selectedPostGradOption;
+          } else {
+            if (newState.player.money > 0) {
+              newState.endingId = 'unemployed';
+            } else {
+              newState.endingId = 'homeless';
+            }
+          }
+          outcomes.push({
+            type: 'game-ended',
+            endingId: newState.endingId,
+          });
+        }
       }
       return {
         state: newState,
@@ -316,6 +337,28 @@ export function reduceGame(state: GameState, action: GameAction): GameUpdate {
           outcomes: [{ type: 'action-rejected', message: 'Unknown project kind' }],
         };
       }
+    }
+
+    case 'select-post-grad-option': {
+      if (!state.player.postGradOptions.includes(action.option)) {
+        return {
+          state,
+          outcomes: [{ type: 'action-rejected', message: 'Invalid post-grad option selected' }],
+        };
+      }
+      const outcomes: ActionOutcome[] = [];
+      const nextState = produce(state, (newState) => {
+        newState.player.selectedPostGradOption = action.option;
+        newState.endingId = action.option;
+      });
+      outcomes.push({
+        type: 'game-ended',
+        endingId: action.option,
+      });
+      return {
+        state: nextState,
+        outcomes,
+      };
     }
 
     default:

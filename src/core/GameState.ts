@@ -39,6 +39,10 @@ export type GameAction =
   | {
       type: 'finish-project';
       projectId: string;
+    }
+  | {
+      type: 'select-post-grad-option';
+      option: PostGradOption;
     };
 
 export type ActionOutcome =
@@ -56,6 +60,9 @@ export type ActionOutcome =
   | {
       type: 'reminder';
       message: string;
+    }
+  | {
+      type: 'pending-post-grad-option-selection';
     }
   | {
       type: 'game-ended';
